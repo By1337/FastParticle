@@ -64,7 +64,7 @@ public abstract class MutableParticleData implements ParticleIterable {
             public boolean writeNext(ByteBuf buf) {
                 if (read) return false;
                 write(buf);
-                return true;
+                return read = true;
             }
         };
     }
