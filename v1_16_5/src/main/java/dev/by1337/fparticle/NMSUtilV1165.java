@@ -13,6 +13,7 @@ import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.server.network.ServerConnectionListener;
 import org.bukkit.Particle;
 import org.bukkit.craftbukkit.CraftParticle;
 import org.bukkit.craftbukkit.entity.CraftPlayer;

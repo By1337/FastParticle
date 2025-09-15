@@ -36,7 +36,6 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
 
     public ParticleSender(Channel channel) {
         this.channel = channel;
-        // channel.closeFuture().addListener((future) -> this.close());
         protocolVersion = Version.VERSION.protocolVersion();//todo
         out = channel.alloc().buffer();
         tmp = channel.alloc().buffer();
@@ -84,13 +83,8 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
     }
 
     public void write(ByteBuf buf) {
-        lock.lock();
-        try {
-            write(buf, out);
-        } finally {
-            flushIfDue();
-            lock.unlock();
-        }
+       ctx.write(buf);
+       flushIfDue();
     }
 
     public ByteBuf writeAndGetSlice(ParticleIterable particles) {
@@ -113,10 +107,6 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
         }
     }
 
-    private void write(ByteBuf buf, ByteBuf out) {
-        if (out == null) return; //closed
-        out.writeBytes(buf);
-    }
 
     private ByteBuf writeAndGetSlice(ParticleIterable particles, ByteBuf out) {
         if (out == null) return null; //closed
@@ -178,7 +168,6 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
 
     public void close() {
         if (out == null) return;
-        System.out.println("ParticleSender.close");
         lock.lock();
         try {
             out.release();

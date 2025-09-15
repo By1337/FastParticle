@@ -6,6 +6,7 @@ import dev.by1337.fparticle.particle.ParticleIterable;
 import dev.by1337.fparticle.particles.SingleParticleBatch;
 import dev.by1337.fparticle.util.Version;
 import io.netty.buffer.ByteBuf;
+import org.bukkit.Bukkit;
 import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -43,7 +44,9 @@ public class FParticle extends JavaPlugin {
     public static ParticleSender getReceiver(Player player) {
         return flusher.getReceiver(player);
     }
-
+    private static void sendAll(ParticleIterable particle){
+        sendParticle(Bukkit.getOnlinePlayers().stream().map(FParticle::getReceiver).toList(), particle);
+    }
     public static void sendParticle(Collection<ParticleSender> receivers, ParticleIterable particles) {
         final int[] protocols = new int[32];
         int freeBuffIdx = 0;
@@ -64,8 +67,7 @@ public class FParticle extends JavaPlugin {
                 } else if (storedProtocol == protocol) {
                     int bufIdx = (packed >>> 24) & 0xFF;
                     ByteBuf buf = bufs[bufIdx];
-                    receiver.write(buf);
-                    buf.readerIndex(0);
+                    receiver.write(buf.retainedDuplicate());
                 } else {
                     receiver.write(particles);
                 }
@@ -86,7 +88,7 @@ public class FParticle extends JavaPlugin {
             particle.particle(Particle.DRAGON_BREATH);
 
             var location = player.getLocation().clone();
-            ParticleSender receiver = getReceiver(player);
+            //ParticleSender receiver = getReceiver(player);
             new BukkitRunnable() {
                 double r = 1;
 
@@ -106,22 +108,22 @@ public class FParticle extends JavaPlugin {
                         }
                         long nanos = System.nanoTime();
                         for (double y = minY; y <= maxY; y++) {
-                            receiver.write(particle.pos(minX, y, minZ));
-                            receiver.write(particle.pos(maxX, y, minZ));
-                            receiver.write(particle.pos(minX, y, maxZ));
-                            receiver.write(particle.pos(maxX, y, maxZ));
+                            sendAll(particle.pos(minX, y, minZ));
+                            sendAll(particle.pos(maxX, y, minZ));
+                            sendAll(particle.pos(minX, y, maxZ));
+                            sendAll(particle.pos(maxX, y, maxZ));
                         }
                         for (double x = minX; x <= maxX; x++) {
-                            receiver.write(particle.pos(x, maxY, minZ));
-                            receiver.write(particle.pos(x, minY, minZ));
-                            receiver.write(particle.pos(x, maxY, maxZ));
-                            receiver.write(particle.pos(x, minY, maxZ));
+                            sendAll(particle.pos(x, maxY, minZ));
+                            sendAll(particle.pos(x, minY, minZ));
+                            sendAll(particle.pos(x, maxY, maxZ));
+                            sendAll(particle.pos(x, minY, maxZ));
                         }
                         for (double z = minZ; z <= maxZ; z++) {
-                            receiver.write(particle.pos(minX, minY, z));
-                            receiver.write(particle.pos(maxX, minY, z));
-                            receiver.write(particle.pos(minX, maxY, z));
-                            receiver.write(particle.pos(maxX, maxY, z));
+                            sendAll(particle.pos(minX, minY, z));
+                            sendAll(particle.pos(maxX, minY, z));
+                            sendAll(particle.pos(minX, maxY, z));
+                            sendAll(particle.pos(maxX, maxY, z));
                         }
                     }
                     // System.out.println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - nanos));
@@ -173,15 +175,15 @@ public class FParticle extends JavaPlugin {
                     spawner.at(x, y, z, offsetX, offsetY, offsetZ);
                 }
             }).posMutator(vec -> vec.add(player.getLocation().toVector()));*/
-            ParticleSender receiver = getReceiver(player);
+          //  ParticleSender receiver = getReceiver(player);
             // receiver.write(particles);
             // System.out.println(particles.size());
             // System.out.println(particles.sizeBytes());
-            var particle = MutableParticleData.createNew().particle(Particle.SOUL).maxSpeed(0.2f);
+           // var particle = MutableParticleData.createNew().particle(Particle.SOUL).maxSpeed(0.2f);
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    sendParticle(List.of(receiver), particles);
+                    sendAll(particles);
                 }
             }.runTaskTimerAsynchronously(this, 1, 1);
         }
