@@ -1,5 +1,6 @@
 package dev.by1337.fparticle;
 
+import dev.by1337.fparticle.handler.ParticleSender;
 import dev.by1337.fparticle.particle.MutableParticleData;
 import dev.by1337.fparticle.particle.ParticleIterable;
 import dev.by1337.fparticle.particles.SingleParticleBatch;
@@ -15,10 +16,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 public class FParticle extends JavaPlugin {
-    private static FParticleFlusher flusher;
+    private static FParticleHooker flusher;
     public static final NMSUtil NMS_UTIL = create();
 
     @Override
@@ -27,7 +27,7 @@ public class FParticle extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        flusher = new FParticleFlusher(this);
+        flusher = new FParticleHooker(this, "fparticle");
     }
 
     @Override
@@ -40,20 +40,16 @@ public class FParticle extends JavaPlugin {
         return NMS_UTIL.newParticle();
     }
 
-    public static ParticleReceiver getReceiver(Player player) {
+    public static ParticleSender getReceiver(Player player) {
         return flusher.getReceiver(player);
     }
 
-    public static ParticleReceiver getReceiver(UUID uuid) {
-        return flusher.getReceiver(uuid);
-    }
-
-    public static void sendParticle(Collection<ParticleReceiver> receivers, ParticleIterable particles) {
+    public static void sendParticle(Collection<ParticleSender> receivers, ParticleIterable particles) {
         final int[] protocols = new int[32];
         int freeBuffIdx = 0;
         final ByteBuf[] bufs = new ByteBuf[32];
         try {
-            for (ParticleReceiver receiver : receivers) {
+            for (ParticleSender receiver : receivers) {
                 int protocol = receiver.protocolVersion();
                 int idx = protocol % 32;
                 int packed = protocols[idx];
@@ -90,7 +86,7 @@ public class FParticle extends JavaPlugin {
             particle.particle(Particle.DRAGON_BREATH);
 
             var location = player.getLocation().clone();
-            ParticleReceiver receiver = getReceiver(player);
+            ParticleSender receiver = getReceiver(player);
             new BukkitRunnable() {
                 double r = 1;
 
@@ -177,7 +173,7 @@ public class FParticle extends JavaPlugin {
                     spawner.at(x, y, z, offsetX, offsetY, offsetZ);
                 }
             }).posMutator(vec -> vec.add(player.getLocation().toVector()));*/
-            ParticleReceiver receiver = getReceiver(player);
+            ParticleSender receiver = getReceiver(player);
             // receiver.write(particles);
             // System.out.println(particles.size());
             // System.out.println(particles.sizeBytes());
