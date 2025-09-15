@@ -1,6 +1,5 @@
 package dev.by1337.fparticle.handler;
 
-import dev.by1337.fparticle.FParticle;
 import dev.by1337.fparticle.particle.ParticleIterable;
 import dev.by1337.fparticle.util.ByteBufUtil;
 import dev.by1337.fparticle.util.Version;
@@ -10,9 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.AttributeKey;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -20,16 +16,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
     private static final long FLUSH_DELAY = TimeUnit.MILLISECONDS.toNanos(50);
-    private static final int PACKET_ID = FParticle.NMS_UTIL.getLevelParticlesPacketId();
 
     public static final AttributeKey<ParticleSender> ATTRIBUTE = AttributeKey.valueOf("fparticle_attr");
-    private static final int MAX_EXPECTED_SIZE = 16 * 1024;
 
     private final Channel channel;
     private ByteBuf out;
-    private ByteBuf tmp;
     private final Lock lock = new ReentrantLock();
-    private int particles;
     private final int protocolVersion;
     private long lastFlushTime;
     private ChannelHandlerContext ctx;
@@ -38,7 +30,6 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
         this.channel = channel;
         protocolVersion = Version.VERSION.protocolVersion();//todo
         out = channel.alloc().buffer();
-        tmp = channel.alloc().buffer();
         channel.attr(ATTRIBUTE).set(this);
     }
 
@@ -76,15 +67,9 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
         }
     }
 
-    public void addSpawnedParticles(int count) {
-        lock.lock();
-        particles += count;
-        lock.unlock();
-    }
-
     public void write(ByteBuf buf) {
-       ctx.write(buf);
-       flushIfDue();
+        ctx.write(buf);
+        flushIfDue();
     }
 
     public ByteBuf writeAndGetSlice(ParticleIterable particles) {
@@ -118,25 +103,7 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
 
     private void write(ParticleIterable particles, ByteBuf out) {
         if (out == null) return; //closed
-        this.particles += particles.size();
-        var iterator = particles.iterator();
-
-        ByteBufUtil.writeVarInt(tmp, PACKET_ID);
-        while (iterator.writeNext(tmp)) {
-            int compressSize;
-            if (tmp.readableBytes() > 256) {
-                compressSize = -1;
-                //todo
-            } else {
-                compressSize = 0;
-            }
-            ByteBufUtil.writeVarInt(out, tmp.readableBytes() + ByteBufUtil.warIntSize(compressSize));
-            ByteBufUtil.writeVarInt(out, compressSize);
-            out.writeBytes(tmp);
-            tmp.clear();
-            ByteBufUtil.writeVarInt(tmp, PACKET_ID);
-        }
-        tmp.clear();
+        ByteBufUtil.writeParticle(out, particles);
     }
 
     public void flush() {
@@ -146,16 +113,8 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
         ByteBuf toFlush;
         try {
             if (out.readableBytes() == 0) return;
-            //todo debug
-            Bukkit.getOnlinePlayers().forEach(player ->
-                    player.sendActionBar(Component.text("spawn particles: " + particles).color(NamedTextColor.YELLOW)));
-            particles = 0;
             toFlush = out;
             out = channel.alloc().buffer();
-            if (tmp.capacity() >= MAX_EXPECTED_SIZE) {
-                tmp.release();
-                tmp = channel.alloc().buffer();
-            }
         } finally {
             lock.unlock();
         }
@@ -172,8 +131,6 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
         try {
             out.release();
             out = null;
-            tmp.release();
-            tmp = null;
         } finally {
             lock.unlock();
         }

@@ -13,6 +13,7 @@ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 public class SingleParticleBatch implements ParticleIterable {
@@ -87,8 +88,8 @@ public class SingleParticleBatch implements ParticleIterable {
             final Vector vector = new Vector();
             final Vec3f vec = distMutator == null ? null : new Vec3f();
             @Override
-            public boolean writeNext(ByteBuf buf) {
-                if (ptr >= pos.length) return false;
+            public void write(ByteBuf buf) {
+                if (ptr >= pos.length) throw new NoSuchElementException();
                 int startPtr = buf.writerIndex();
                 buf.writeBytes(particle);
 
@@ -102,7 +103,11 @@ public class SingleParticleBatch implements ParticleIterable {
                     NMS_UTIL.mutateDist(startPtr, buf, distMutator, vec);
                 }
                 ptr += 3;
-                return true;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return ptr < pos.length;
             }
         };
     }

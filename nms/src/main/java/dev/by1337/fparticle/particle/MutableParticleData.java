@@ -5,6 +5,8 @@ import io.netty.buffer.ByteBuf;
 import org.bukkit.Particle;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.NoSuchElementException;
+
 public abstract class MutableParticleData implements ParticleIterable {
     private static final NMSUtil NMS_UTIL;
     protected double x;
@@ -24,6 +26,7 @@ public abstract class MutableParticleData implements ParticleIterable {
     public static MutableParticleData createNew() {
         return NMS_UTIL.newParticle();
     }
+
     static {
         try {
             Class<?> cl = Class.forName("dev.by1337.fparticle.FParticle");
@@ -41,6 +44,7 @@ public abstract class MutableParticleData implements ParticleIterable {
         this.z = z;
         return this;
     }
+
     public MutableParticleData addPos(double x, double y, double z) {
         this.x += x;
         this.y += y;
@@ -61,10 +65,15 @@ public abstract class MutableParticleData implements ParticleIterable {
             boolean read;
 
             @Override
-            public boolean writeNext(ByteBuf buf) {
-                if (read) return false;
+            public void write(ByteBuf buf) {
+                if (read) throw new NoSuchElementException();
                 write(buf);
-                return read = true;
+                read = true;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return read;
             }
         };
     }

@@ -13,6 +13,7 @@ public interface NMSUtil {
     Channel getChannel(Player player);
 
     int getLevelParticlesPacketId();
+    int getCompressionThreshold();
 
     MutableParticleData newParticle();
 

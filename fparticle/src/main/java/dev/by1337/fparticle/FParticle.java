@@ -1,5 +1,6 @@
 package dev.by1337.fparticle;
 
+import com.viaversion.viaversion.api.Via;
 import dev.by1337.fparticle.handler.ParticleSender;
 import dev.by1337.fparticle.particle.MutableParticleData;
 import dev.by1337.fparticle.particle.ParticleIterable;

@@ -9,11 +9,15 @@ import io.netty.channel.Channel;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.network.Connection;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.network.protocol.login.ClientLoginPacketListener;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerConnectionListener;
+import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.bukkit.Particle;
 import org.bukkit.craftbukkit.CraftParticle;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
@@ -37,6 +41,9 @@ class NMSUtilV1165 implements NMSUtil {
         return id;
     }
 
+    public int getCompressionThreshold(){
+        return MinecraftServer.getServer().getCompressionThreshold();
+    }
 
     private static final int POS_OFFSET = Integer.BYTES + Byte.BYTES;
     private static final int D_SIZE = Double.BYTES;

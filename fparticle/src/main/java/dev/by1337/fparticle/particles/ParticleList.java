@@ -13,6 +13,7 @@ import io.netty.buffer.Unpooled;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -57,8 +58,8 @@ public class ParticleList implements ParticleIterable {
             final Vec3f vec = distMutator == null ? null : new Vec3f();
 
             @Override
-            public boolean writeNext(ByteBuf out) {
-                if (offsets.readableBytes() == 0) return false;
+            public void write(ByteBuf out) {
+                if (offsets.readableBytes() == 0) throw new NoSuchElementException();
                 int startOffset = ByteBufUtil.readVarInt(offsets);
                 offsets.markReaderIndex();
                 int endOffset = offsets.readableBytes() > 0 ? ByteBufUtil.readVarInt(offsets) : buf.readableBytes();
@@ -71,7 +72,11 @@ public class ParticleList implements ParticleIterable {
                 if (distMutator != null){
                     NMS_UTIL.mutateDist(offset, out, distMutator, vec);
                 }
-                return true;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return offsets.readableBytes() > 0;
             }
         };
     }

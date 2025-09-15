@@ -1,8 +1,55 @@
 package dev.by1337.fparticle.util;
 
+import dev.by1337.fparticle.FParticle;
+import dev.by1337.fparticle.particle.ParticleIterable;
 import io.netty.buffer.ByteBuf;
 
 public class ByteBufUtil {
+    public static final int PACKET_ID = FParticle.NMS_UTIL.getLevelParticlesPacketId();
+    public static final int COMPRESSION_THRESHOLD = FParticle.NMS_UTIL.getCompressionThreshold();
+
+    // prepender size varInt3
+    // compress size varInt
+    // packet id varInt
+    // packet payload
+    public static void writeParticle(ByteBuf out, ParticleIterable particles) {
+        var iterator = particles.iterator();
+
+        while (iterator.hasNext()) {
+            int startBlockPtr = out.writerIndex();
+            // пишем prepender size в два байта, максимум 2^14,
+            // этого достаточно так как если размер будет больше чем COMPRESSION_THRESHOLD это значение перезапишется после сжатия
+            writeVarInt2(out, 0);
+
+            int idx = out.writerIndex();
+            // compress size всегда 0 если размер меньше COMPRESSION_THRESHOLD, если больше то при сжатии это значение перезапишется
+            writeVarInt1(out, 0);
+
+            writeVarInt(out, PACKET_ID);
+            iterator.write(out);
+            int size = out.writerIndex() - idx;
+            if (size < COMPRESSION_THRESHOLD) {
+                setVarInt2(out, startBlockPtr, size);
+            } else {
+                //todo compress
+            }
+        }
+
+
+    }
+
+    public static void writeVarInt1(ByteBuf buf, int value) {
+        buf.writeByte(value);
+    }
+
+    public static void writeVarInt2(ByteBuf buf, int value) {
+        buf.writeShort((value & 0x7F | 0x80) << 8 | (value >>> 7));
+    }
+
+    public static void setVarInt2(ByteBuf buf, int index, int value) {
+        buf.setShort(index, (value & 0x7F | 0x80) << 8 | (value >>> 7));
+    }
+
     public static void writeVarInt(ByteBuf buf, int value) {
         if ((value & (0xFFFFFFFF << 7)) == 0) {
             buf.writeByte(value);
@@ -23,6 +70,7 @@ public class ByteBufUtil {
             buf.writeByte(value >>> 28);
         }
     }
+
     public static int warIntSize(int value) {
         if ((value & (0xFFFFFFFF << 7)) == 0) {
             return 1;
@@ -53,5 +101,12 @@ public class ByteBufUtil {
             }
         }
         throw new IllegalArgumentException();
+    }
+
+    static {
+        // Без сжатия в prepender size пишем только два байта, и в два байта помещается только 2^14
+        if (COMPRESSION_THRESHOLD > 16384) {
+            throw new IllegalStateException("Bad compression threshold. Should be < 16384.");
+        }
     }
 }

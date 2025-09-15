@@ -14,6 +14,7 @@ import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 public class SingleDistParticleBatch implements ParticleIterable {
@@ -94,8 +95,8 @@ public class SingleDistParticleBatch implements ParticleIterable {
             final Vector vector = new Vector();
             final Vec3f vec = new Vec3f();
             @Override
-            public boolean writeNext(ByteBuf buf) {
-                if (ptr >= pos.length) return false;
+            public void write(ByteBuf buf) {
+                if (ptr >= pos.length) throw new NoSuchElementException();;
                 int startPtr = buf.writerIndex();
                 buf.writeBytes(particle);
 
@@ -110,7 +111,11 @@ public class SingleDistParticleBatch implements ParticleIterable {
                     if (distMutator != null) distMutator.mutate(v);
                 }, vec);
                 ptr += 3;
-                return true;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return ptr < pos.length;
             }
         };
     }
