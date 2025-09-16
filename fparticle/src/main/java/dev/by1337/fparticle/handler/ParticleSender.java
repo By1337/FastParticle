@@ -2,6 +2,7 @@ package dev.by1337.fparticle.handler;
 
 import dev.by1337.fparticle.particle.ParticleIterable;
 import dev.by1337.fparticle.util.ByteBufUtil;
+import dev.by1337.fparticle.util.ByteBufPool;
 import dev.by1337.fparticle.util.Version;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -11,8 +12,6 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.AttributeKey;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
     private static final long FLUSH_DELAY = TimeUnit.MILLISECONDS.toNanos(50);
@@ -20,17 +19,16 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
     public static final AttributeKey<ParticleSender> ATTRIBUTE = AttributeKey.valueOf("fparticle_attr");
 
     private final Channel channel;
-    private ByteBuf out;
-    private final Lock lock = new ReentrantLock();
     private final int protocolVersion;
     private long lastFlushTime;
     private ChannelHandlerContext ctx;
+    private final ByteBufPool pool;
 
     public ParticleSender(Channel channel) {
         this.channel = channel;
         protocolVersion = Version.VERSION.protocolVersion();//todo
-        out = channel.alloc().buffer();
         channel.attr(ATTRIBUTE).set(this);
+        pool = new ByteBufPool(channel.alloc(),1024, 50, 8, this::write);
     }
 
     @Override
@@ -68,33 +66,34 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
     }
 
     public void write(ByteBuf buf) {
+        if (ctx == null){
+            buf.release();
+            return;
+        }
         ctx.write(buf);
         flushIfDue();
     }
 
     public ByteBuf writeAndGetSlice(ParticleIterable particles) {
-        lock.lock();
+        var pooled = pool.acquire();
         try {
-            return writeAndGetSlice(particles, out);
+            return writeAndGetSlice(particles, pooled.buf());
         } finally {
+            pool.release(pooled);
             flushIfDue();
-            lock.unlock();
         }
     }
 
     public void write(ParticleIterable particles) {
-        lock.lock();
+        var pooled = pool.acquire();
         try {
-            write(particles, out);
+            write(particles, pooled.buf());
         } finally {
-            flushIfDue();
-            lock.unlock();
+            pool.release(pooled);
         }
     }
 
-
     private ByteBuf writeAndGetSlice(ParticleIterable particles, ByteBuf out) {
-        if (out == null) return null; //closed
         int start = out.writerIndex();
         write(particles, out);
         int end = out.writerIndex();
@@ -102,38 +101,18 @@ public class ParticleSender extends MessageToByteEncoder<ByteBuf> {
     }
 
     private void write(ParticleIterable particles, ByteBuf out) {
-        if (out == null) return; //closed
         ByteBufUtil.writeParticle(out, particles);
     }
 
     public void flush() {
-        if (out == null) return; //closed
-        lock.lock();
         lastFlushTime = System.nanoTime();
-        ByteBuf toFlush;
-        try {
-            if (out.readableBytes() == 0) return;
-            toFlush = out;
-            out = channel.alloc().buffer();
-        } finally {
-            lock.unlock();
-        }
+        pool.flushExpired();
         if (ctx != null) {
-            ctx.writeAndFlush(toFlush);
-        } else {
-            toFlush.release();
+            ctx.flush();
         }
     }
 
     public void close() {
-        if (out == null) return;
-        lock.lock();
-        try {
-            out.release();
-            out = null;
-        } finally {
-            lock.unlock();
-        }
     }
 
     public int protocolVersion() {

@@ -80,6 +80,9 @@ public class FParticle extends JavaPlugin {
         }
     }
 
+    private void timer(Runnable task) {
+        getServer().getScheduler().runTaskTimerAsynchronously(this, task, 1, 1);
+    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -89,6 +92,42 @@ public class FParticle extends JavaPlugin {
             particle.particle(Particle.DRAGON_BREATH);
 
             var location = player.getLocation().clone();
+            if (true){
+                for (int i = 0; i < 30; i++) {
+                    double minX = location.getX() - 5;
+                    double minY = location.getY() - 5;
+                    double minZ = location.getZ() - 5;
+
+                    double maxX = location.getX() + 5;
+                    double maxY = location.getY() + 5;
+                    double maxZ = location.getZ() + 5;
+
+                    long nanos = System.nanoTime();
+                    for (double y = minY; y <= maxY; y++) {
+                        double finalY = y;
+                        timer(() -> sendAll(particle.pos(minX, finalY, minZ)));
+                        timer(() -> sendAll(particle.pos(maxX, finalY, minZ)));
+                        timer(() -> sendAll(particle.pos(minX, finalY, maxZ)));
+                        timer(() -> sendAll(particle.pos(maxX, finalY, maxZ)));
+                    }
+                    for (double x = minX; x <= maxX; x++) {
+                        double finalX = x;
+                        timer(() -> sendAll(particle.pos(finalX, maxY, minZ)));
+                        timer(() -> sendAll(particle.pos(finalX, minY, minZ)));
+                        timer(() -> sendAll(particle.pos(finalX, maxY, maxZ)));
+                        timer(() -> sendAll(particle.pos(finalX, minY, maxZ)));
+                    }
+                    for (double z = minZ; z <= maxZ; z++) {
+                        double finalZ = z;
+                        timer(() -> sendAll(particle.pos(minX, minY, finalZ)));
+                        timer(() -> sendAll(particle.pos(maxX, minY, finalZ)));
+                        timer(() -> sendAll(particle.pos(minX, maxY, finalZ)));
+                        timer(() -> sendAll(particle.pos(maxX, maxY, finalZ)));
+                    }
+                }
+
+                return true;
+            }
             //ParticleSender receiver = getReceiver(player);
             new BukkitRunnable() {
                 double r = 1;

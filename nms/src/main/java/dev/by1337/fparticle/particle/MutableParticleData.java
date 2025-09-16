@@ -67,13 +67,13 @@ public abstract class MutableParticleData implements ParticleIterable {
             @Override
             public void write(ByteBuf buf) {
                 if (read) throw new NoSuchElementException();
-                write(buf);
+                MutableParticleData.this.write(buf);
                 read = true;
             }
 
             @Override
             public boolean hasNext() {
-                return read;
+                return !read;
             }
         };
     }
