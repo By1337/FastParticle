@@ -16,6 +16,7 @@ public class ByteBufPool {
     private final int maxLive;
     private final Consumer<ByteBuf> onExpire;
     private final AtomicInteger live = new AtomicInteger();
+    private boolean closed;
 
     public ByteBufPool(ByteBufAllocator allocator, int bufSize, long ttlMillis, int maxLiveBuffers, Consumer<ByteBuf> onExpire) {
         this.allocator = allocator;
@@ -27,6 +28,9 @@ public class ByteBufPool {
     }
 
     public PooledBuf acquire() {
+        if (closed){
+            throw new IllegalStateException("Pool is closed");
+        }
         for (; ; ) {
             long now = System.nanoTime();
 
@@ -56,6 +60,11 @@ public class ByteBufPool {
     }
 
     public void release(PooledBuf buf) {
+        if (closed){
+            buf.buf.release();
+            live.decrementAndGet();
+            return;
+        }
         long now = System.nanoTime();
         if (buf.isExpired(now)) {
             expire(buf);
@@ -93,6 +102,10 @@ public class ByteBufPool {
         } finally {
             live.decrementAndGet();
         }
+    }
+
+    public void setClosed(boolean closed) {
+        this.closed = closed;
     }
 
     public record PooledBuf(ByteBuf buf, long expireTime) {

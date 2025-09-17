@@ -12,6 +12,10 @@ import org.bukkit.util.Vector;
 public final class FParticleUtil {
     static NmsAccessor instance;
 
+    public static boolean canReceiveParticles(Player player) {
+        return instance.canReciveParticles(player);
+    }
+
     public static Channel getChannel(Player player) {
         return instance.getChannel(player);
     }
@@ -45,6 +49,7 @@ public final class FParticleUtil {
     }
 
     protected static abstract class NmsAccessor {
+        public abstract boolean canReciveParticles(Player player);
         public abstract Channel getChannel(Player player);
 
         public abstract int getLevelParticlesPacketId();

@@ -3,14 +3,17 @@ package dev.by1337.fparticle;
 import dev.by1337.fparticle.netty.buffer.ByteBufPool;
 import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
 import dev.by1337.fparticle.particle.ParticleSource;
-import dev.by1337.fparticle.util.Version;
+import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.AttributeKey;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
@@ -24,11 +27,17 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     private long lastFlushTime;
     private ChannelHandlerContext ctx;
     private final ByteBufPool pool;
+    private final ViaHook.ViaMutator viaMutator;
+    private boolean ready;
+    private final UUID uuid;
 
-    public ParticleReceiver(Channel channel) {
+    public ParticleReceiver(Channel channel, Player player) {
         this.channel = channel;
-        protocolVersion = Version.VERSION.protocolVersion();//todo
+        viaMutator = ViaHook.getViaMutator(player);
+        protocolVersion = viaMutator.protocol();
         channel.attr(ATTRIBUTE).set(this);
+        ready = FParticleUtil.canReceiveParticles(player);
+        uuid = player.getUniqueId();
         pool = new ByteBufPool(channel.alloc(), 1024, 50, 8, this::write);
     }
 
@@ -36,12 +45,14 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         this.ctx = ctx;
+        pool.setClosed(false);
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         super.handlerRemoved(ctx);
         this.ctx = null;
+        pool.setClosed(true);
         close();
     }
 
@@ -60,6 +71,13 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
         close();
     }
 
+    public boolean ready() {
+        if (!ready) {
+            ready = FParticleUtil.canReceiveParticles(Bukkit.getPlayer(uuid));
+        }
+        return ready && ctx != null;
+    }
+
     public void flushIfDue() {
         if (System.nanoTime() - lastFlushTime > FLUSH_DELAY) {
             flush();
@@ -67,7 +85,7 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     }
 
     public void write(ByteBuf buf) {
-        if (ctx == null) {
+        if (!ready()) {
             buf.release();
             return;
         }
@@ -76,9 +94,10 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     }
 
     public ByteBuf writeAndGetSlice(ParticleSource particles) {
+        if (!ready()) return null;
         var pooled = pool.acquire();
         try {
-            return writeAndGetSlice(particles, pooled.buf());
+            return ByteBufUtil.writeAndGetSlice(pooled.buf(), particles, viaMutator);
         } finally {
             pool.release(pooled);
             flushIfDue();
@@ -86,24 +105,15 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     }
 
     public void write(ParticleSource particles) {
+        if (!ready()) return;
         var pooled = pool.acquire();
         try {
-            write(particles, pooled.buf());
+            ByteBufUtil.writeParticle(pooled.buf(), particles, viaMutator);
         } finally {
             pool.release(pooled);
         }
     }
 
-    private ByteBuf writeAndGetSlice(ParticleSource particles, ByteBuf out) {
-        int start = out.writerIndex();
-        write(particles, out);
-        int end = out.writerIndex();
-        return start == end ? null : out.retainedSlice(start, end - start);
-    }
-
-    private void write(ParticleSource particles, ByteBuf out) {
-        ByteBufUtil.writeParticle(out, particles);
-    }
 
     public void flush() {
         lastFlushTime = System.nanoTime();

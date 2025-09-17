@@ -2,17 +2,26 @@ package dev.by1337.fparticle.netty.buffer;
 
 import dev.by1337.fparticle.FParticleUtil;
 import dev.by1337.fparticle.particle.ParticleSource;
+import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
 
 public class ByteBufUtil {
     public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
     public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
 
+
+    public static ByteBuf writeAndGetSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via) {
+        int start = out.writerIndex();
+        writeParticle(out, particles, via);
+        int end = out.writerIndex();
+        return start == end ? null : out.retainedSlice(start, end - start);
+    }
+
     // prepender size varInt3
     // compress size varInt
     // packet id varInt
     // packet payload
-    public static void writeParticle(ByteBuf out, ParticleSource particles) {
+    public static void writeParticle(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via) {
         var iterator = particles.writer();
 
         while (iterator.hasNext()) {
@@ -25,8 +34,16 @@ public class ByteBufUtil {
             // compress size всегда 0 если размер меньше COMPRESSION_THRESHOLD, если больше то при сжатии это значение перезапишется
             writeVarInt1(out, 0);
 
+            int packetStart = out.writerIndex();
+
             writeVarInt(out, PACKET_ID);
             iterator.write(out);
+            if (via.shouldTransformPacket()) {
+                var slice = out.slice(packetStart, out.writerIndex() - packetStart);
+                via.mutator().accept(slice);
+                out.writerIndex(packetStart + slice.writerIndex());
+            }
+
             int size = out.writerIndex() - idx;
             if (size < COMPRESSION_THRESHOLD) {
                 setVarInt2(out, startBlockPtr, size);

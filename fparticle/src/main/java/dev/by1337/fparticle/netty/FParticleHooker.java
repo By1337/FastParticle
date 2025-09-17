@@ -36,7 +36,7 @@ public class FParticleHooker implements Listener, Closeable {
 
     private void hook(Player player) {
         Channel channel = FParticleUtil.getChannel(player);
-        channel.pipeline().addBefore("prepender", handlerName, new ParticleReceiver(channel));
+        channel.pipeline().addBefore("prepender", handlerName, new ParticleReceiver(channel, player));
     }
 
     @Override

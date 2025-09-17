@@ -28,6 +28,10 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
     private final int id = ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, new ClientboundLevelParticlesPacket());
 
     @Override
+    public boolean canReciveParticles(Player player) {
+        return ((CraftPlayer) player).getHandle().networkManager.protocol == ConnectionProtocol.PLAY;
+    }
+    @Override
     public Channel getChannel(Player player) {
         return ((CraftPlayer) player).getHandle().networkManager.channel;
     }
