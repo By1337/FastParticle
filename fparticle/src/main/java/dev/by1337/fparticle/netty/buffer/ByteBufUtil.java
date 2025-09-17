@@ -1,13 +1,17 @@
 package dev.by1337.fparticle.netty.buffer;
 
+import com.viaversion.viaversion.exception.InformativeException;
 import dev.by1337.fparticle.FParticleUtil;
 import dev.by1337.fparticle.particle.ParticleSource;
 import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ByteBufUtil {
     public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
     public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
+    private static final Logger log = LoggerFactory.getLogger("FParticle");
 
 
     public static ByteBuf writeAndGetSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via) {
@@ -39,9 +43,16 @@ public class ByteBufUtil {
             writeVarInt(out, PACKET_ID);
             iterator.write(out);
             if (via.shouldTransformPacket()) {
-                var slice = out.slice(packetStart, out.writerIndex() - packetStart);
-                via.mutator().accept(slice);
-                out.writerIndex(packetStart + slice.writerIndex());
+                try {
+                    // без slice via не умеет
+                    var slice = out.slice(packetStart, out.writerIndex() - packetStart);
+                    via.mutator().accept(slice);
+                    out.writerIndex(packetStart + slice.writerIndex());
+                } catch (InformativeException ignored) {
+                    log.error("Failed to adapt package via ViaVersion!");
+                    out.writerIndex(startBlockPtr);
+                    return;
+                }
             }
 
             int size = out.writerIndex() - idx;

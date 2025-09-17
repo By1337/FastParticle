@@ -3,9 +3,10 @@ package dev.by1337.fparticle;
 import dev.by1337.fparticle.particle.ParticleSource;
 import io.netty.buffer.ByteBuf;
 
+import java.io.Closeable;
 import java.util.Arrays;
 
-public class ParticleSender {
+public class ParticleSender implements Closeable {
     private final int[] protocols = new int[32];
     private int freeBuffIdx = 0;
     private final ByteBuf[] bufs = new ByteBuf[32];
@@ -36,13 +37,19 @@ public class ParticleSender {
         freeBuffIdx = 0;
     }
 
+    @Override
+    public void close() {
+        reset();
+    }
+
     static int send(ParticleReceiver receiver, ParticleSource particles, int[] protocols, int freeBuffIdx, ByteBuf[] bufs) {
+        if (receiver == null) return freeBuffIdx;
         int protocol = receiver.protocolVersion();
         int idx = protocol % 32;
         int packed = protocols[idx];
         int storedProtocol = packed & 0xFFFFFF;
         if (packed == 0) {
-            ByteBuf buf = receiver.writeAndGetSlice(particles); //todo без slice
+            ByteBuf buf = receiver.writeAndGetSlice(particles);
             if (buf != null) {
                 bufs[freeBuffIdx] = buf;
                 protocols[idx] = ((freeBuffIdx & 0xFF) << 24) | (protocol & 0xFFFFFF);

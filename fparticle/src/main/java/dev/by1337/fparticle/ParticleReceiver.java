@@ -33,7 +33,7 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
 
     public ParticleReceiver(Channel channel, Player player) {
         this.channel = channel;
-        viaMutator = ViaHook.getViaMutator(player);
+        viaMutator = ViaHook.getViaMutator(player, channel);
         protocolVersion = viaMutator.protocol();
         channel.attr(ATTRIBUTE).set(this);
         ready = FParticleUtil.canReceiveParticles(player);
