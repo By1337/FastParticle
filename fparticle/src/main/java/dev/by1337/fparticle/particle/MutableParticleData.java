@@ -1,14 +1,13 @@
 package dev.by1337.fparticle.particle;
 
-import dev.by1337.fparticle.NMSUtil;
+import dev.by1337.fparticle.FParticleUtil;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Particle;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 
-public abstract class MutableParticleData implements ParticleIterable {
-    private static final NMSUtil NMS_UTIL;
+public abstract class MutableParticleData implements ParticleSource {
     protected double x;
     protected double y;
     protected double z;
@@ -24,19 +23,18 @@ public abstract class MutableParticleData implements ParticleIterable {
     protected @Nullable Object data;
 
     public static MutableParticleData createNew() {
-        return NMS_UTIL.newParticle();
+        return FParticleUtil.newParticle();
     }
 
-    static {
-        try {
-            Class<?> cl = Class.forName("dev.by1337.fparticle.FParticle");
-            NMS_UTIL = (NMSUtil) cl.getField("NMS_UTIL").get(null);
-        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     public abstract void write(ByteBuf buf);
+
+    public MutableParticleData resetDist(){
+        xDist = 0;
+        yDist = 0;
+        zDist = 0;
+        return this;
+    }
 
     public MutableParticleData pos(double x, double y, double z) {
         this.x = x;
@@ -60,8 +58,8 @@ public abstract class MutableParticleData implements ParticleIterable {
     }
 
     @Override
-    public ParticleIterator iterator() {
-        return new ParticleIterator() {
+    public ParticleWriter writer() {
+        return new ParticleWriter() {
             boolean read;
 
             @Override

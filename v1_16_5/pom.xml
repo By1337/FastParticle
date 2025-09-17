@@ -125,7 +125,7 @@
         </dependency>
         <dependency>
             <groupId>dev.by1337.fparticle</groupId>
-            <artifactId>nms</artifactId>
+            <artifactId>fparticle</artifactId>
             <version>1.0</version>
             <scope>provided</scope>
         </dependency>

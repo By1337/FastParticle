@@ -1,10 +1,10 @@
-package dev.by1337.fparticle.particles;
+package dev.by1337.fparticle.particle.impl;
 
-import dev.by1337.fparticle.*;
+import dev.by1337.fparticle.FParticleUtil;
+import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
 import dev.by1337.fparticle.particle.MutableParticleData;
-import dev.by1337.fparticle.particle.ParticleIterable;
-import dev.by1337.fparticle.particle.ParticleIterator;
-import dev.by1337.fparticle.util.ByteBufUtil;
+import dev.by1337.fparticle.particle.ParticleSource;
+import dev.by1337.fparticle.particle.ParticleWriter;
 import dev.by1337.fparticle.util.DistMutator;
 import dev.by1337.fparticle.util.PosMutator;
 import dev.by1337.fparticle.util.Vec3f;
@@ -17,8 +17,7 @@ import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class ParticleList implements ParticleIterable {
-    private static final NMSUtil NMS_UTIL = FParticle.NMS_UTIL;
+public class ParticleList implements ParticleSource {
     private final ByteBuf buf;
     private final ByteBuf offsets;
     private final @Nullable PosMutator posMutator;
@@ -50,8 +49,8 @@ public class ParticleList implements ParticleIterable {
         return buf.readableBytes();
     }
 
-    public ParticleIterator iterator() {
-        return new ParticleIterator() {
+    public ParticleWriter writer() {
+        return new ParticleWriter() {
             final ByteBuf buf = ParticleList.this.buf.duplicate();
             final ByteBuf offsets = ParticleList.this.offsets.duplicate();
             final Vector vector = posMutator == null ? null : new Vector();
@@ -67,10 +66,10 @@ public class ParticleList implements ParticleIterable {
                 int offset = out.writerIndex();
                 out.writeBytes(buf, startOffset, endOffset - startOffset);
                 if (posMutator != null) {
-                    NMS_UTIL.mutatePos(offset, out, posMutator, vector);
+                    FParticleUtil.mutatePos(offset, out, posMutator, vector);
                 }
-                if (distMutator != null){
-                    NMS_UTIL.mutateDist(offset, out, distMutator, vec);
+                if (distMutator != null) {
+                    FParticleUtil.mutateDist(offset, out, distMutator, vec);
                 }
             }
 
@@ -82,11 +81,10 @@ public class ParticleList implements ParticleIterable {
     }
 
 
-
     public static class Builder {
         private final ByteBuf buf = Unpooled.buffer();
         private final ByteBuf offsets = Unpooled.buffer();
-        private final MutableParticleData particle = FParticle.NMS_UTIL.newParticle();
+        private final MutableParticleData particle = FParticleUtil.newParticle();
         private @Nullable PosMutator posMutator;
         private @Nullable DistMutator distMutator;
         private int size;

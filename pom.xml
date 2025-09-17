@@ -7,8 +7,8 @@
   <packaging>pom</packaging>
   <name>FastParticle-parent</name>
     <modules>
+        <module>bukkit</module>
         <module>fparticle</module>
-        <module>nms</module>
         <module>v1_16_5</module>
     </modules>
 </project>

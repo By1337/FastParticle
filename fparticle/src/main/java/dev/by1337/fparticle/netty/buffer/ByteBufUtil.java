@@ -1,19 +1,19 @@
-package dev.by1337.fparticle.util;
+package dev.by1337.fparticle.netty.buffer;
 
-import dev.by1337.fparticle.FParticle;
-import dev.by1337.fparticle.particle.ParticleIterable;
+import dev.by1337.fparticle.FParticleUtil;
+import dev.by1337.fparticle.particle.ParticleSource;
 import io.netty.buffer.ByteBuf;
 
 public class ByteBufUtil {
-    public static final int PACKET_ID = FParticle.NMS_UTIL.getLevelParticlesPacketId();
-    public static final int COMPRESSION_THRESHOLD = FParticle.NMS_UTIL.getCompressionThreshold();
+    public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
+    public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
 
     // prepender size varInt3
     // compress size varInt
     // packet id varInt
     // packet payload
-    public static void writeParticle(ByteBuf out, ParticleIterable particles) {
-        var iterator = particles.iterator();
+    public static void writeParticle(ByteBuf out, ParticleSource particles) {
+        var iterator = particles.writer();
 
         while (iterator.hasNext()) {
             int startBlockPtr = out.writerIndex();

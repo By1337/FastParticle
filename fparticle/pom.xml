@@ -7,6 +7,7 @@
         <version>1.0</version>
     </parent>
     <artifactId>fparticle</artifactId>
+    <name>Archetype - nms</name>
 
     <properties>
         <java.version>16</java.version>
@@ -106,16 +107,6 @@
             <artifactId>paper-api</artifactId>
             <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>dev.by1337.fparticle</groupId>
-            <artifactId>nms</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.by1337.fparticle</groupId>
-            <artifactId>v1_16_5</artifactId>
-            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>com.viaversion</groupId>

@@ -9,15 +9,11 @@ import io.netty.channel.Channel;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
-import net.minecraft.network.Connection;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
-import net.minecraft.network.protocol.login.ClientLoginPacketListener;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerConnectionListener;
-import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.bukkit.Particle;
 import org.bukkit.craftbukkit.CraftParticle;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
@@ -27,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-class NMSUtilV1165 implements NMSUtil {
+class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
     private static final int[] PARTICLE_TO_ID;
     private final int id = ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, new ClientboundLevelParticlesPacket());
 

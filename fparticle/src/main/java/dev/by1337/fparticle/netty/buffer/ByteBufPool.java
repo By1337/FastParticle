@@ -1,4 +1,4 @@
-package dev.by1337.fparticle.util;
+package dev.by1337.fparticle.netty.buffer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
