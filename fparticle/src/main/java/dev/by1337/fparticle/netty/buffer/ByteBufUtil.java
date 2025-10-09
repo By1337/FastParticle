@@ -14,56 +14,16 @@ public class ByteBufUtil {
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
 
-    public static ByteBuf writeAndGetSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via) {
+    public static ByteBuf writeAndGetRetainedSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via,  double x, double y, double z) {
         int start = out.writerIndex();
-        writeParticle(out, particles, via);
+        writeParticle(out, particles, via,  x, y, z);
         int end = out.writerIndex();
         return start == end ? null : out.retainedSlice(start, end - start);
     }
 
-    // prepender size varInt3
-    // compress size varInt
-    // packet id varInt
-    // packet payload
-    public static void writeParticle(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via) {
-        var iterator = particles.writer();
 
-        while (iterator.hasNext()) {
-            int startBlockPtr = out.writerIndex();
-            // пишем prepender size в два байта, максимум 2^14,
-            // этого достаточно так как если размер будет больше чем COMPRESSION_THRESHOLD это значение перезапишется после сжатия
-            writeVarInt2(out, 0);
-
-            int idx = out.writerIndex();
-            // compress size всегда 0 если размер меньше COMPRESSION_THRESHOLD, если больше то при сжатии это значение перезапишется
-            writeVarInt1(out, 0);
-
-            int packetStart = out.writerIndex();
-
-            writeVarInt(out, PACKET_ID);
-            iterator.write(out);
-            if (via.shouldTransformPacket()) {
-                try {
-                    // без slice via не умеет
-                    var slice = out.slice(packetStart, out.writerIndex() - packetStart);
-                    via.mutator().accept(slice);
-                    out.writerIndex(packetStart + slice.writerIndex());
-                } catch (InformativeException ignored) {
-                    log.error("Failed to adapt package via ViaVersion!");
-                    out.writerIndex(startBlockPtr);
-                    return;
-                }
-            }
-
-            int size = out.writerIndex() - idx;
-            if (size < COMPRESSION_THRESHOLD) {
-                setVarInt2(out, startBlockPtr, size);
-            } else {
-                //todo compress
-            }
-        }
-
-
+    public static void writeParticle(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via, double x, double y, double z) {
+        particles.write(x, y, z, out, via);
     }
 
     public static void writeVarInt1(ByteBuf buf, int value) {

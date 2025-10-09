@@ -28,7 +28,7 @@ public class ByteBufPool {
     }
 
     public PooledBuf acquire() {
-        if (closed){
+        if (closed) {
             throw new IllegalStateException("Pool is closed");
         }
         for (; ; ) {
@@ -60,7 +60,7 @@ public class ByteBufPool {
     }
 
     public void release(PooledBuf buf) {
-        if (closed){
+        if (closed) {
             buf.buf.release();
             live.decrementAndGet();
             return;
@@ -108,14 +108,33 @@ public class ByteBufPool {
         this.closed = closed;
     }
 
-    public record PooledBuf(ByteBuf buf, long expireTime) {
+    public class PooledBuf {
+        final ByteBuf buf;
+        long expireTime;
+
+        public PooledBuf(ByteBuf buf, long expireTime) {
+            this.buf = buf;
+            this.expireTime = expireTime;
+        }
 
         boolean isExpired(long now) {
+            if (buf.writerIndex() == 0) {
+                expireTime = now + ttlNanos;
+                return false;
+            }
             return now > expireTime;
         }
 
-        public void release(ByteBufPool pool) {
-            pool.release(this);
+        public void release() {
+            ByteBufPool.this.release(this);
+        }
+
+        public ByteBuf buf() {
+            return buf;
+        }
+
+        public long expireTime() {
+            return expireTime;
         }
     }
 }

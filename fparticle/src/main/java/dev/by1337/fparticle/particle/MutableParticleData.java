@@ -7,46 +7,41 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 
-public abstract class MutableParticleData implements ParticleSource {
-    protected double x;
-    protected double y;
-    protected double z;
-    protected float xDist;
-    protected float yDist;
-    protected float zDist;
-    protected float maxSpeed;
-    protected int count;
-    protected boolean overrideLimiter;
+public abstract class MutableParticleData {
+    public float xDist;
+    public float yDist;
+    public float zDist;
+    public float maxSpeed;
+    public int count;
+    public boolean overrideLimiter;
     /// 1.21.4+
-    protected boolean alwaysShow;
+    public boolean alwaysShow;
     protected Particle particle = Particle.REDSTONE;
     protected @Nullable Object data;
+
+    public MutableParticleData copy() {
+        return createNew()
+                .dist(xDist, yDist, zDist)
+                .maxSpeed(maxSpeed)
+                .count(count)
+                .overrideLimiter(overrideLimiter)
+                .alwaysShow(alwaysShow)
+                .particle(particle)
+                .data(data)
+                ;
+    }
 
     public static MutableParticleData createNew() {
         return FParticleUtil.newParticle();
     }
 
+    public abstract void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist);
 
-    public abstract void write(ByteBuf buf);
 
-    public MutableParticleData resetDist(){
+    public MutableParticleData resetDist() {
         xDist = 0;
         yDist = 0;
         zDist = 0;
-        return this;
-    }
-
-    public MutableParticleData pos(double x, double y, double z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        return this;
-    }
-
-    public MutableParticleData addPos(double x, double y, double z) {
-        this.x += x;
-        this.y += y;
-        this.z += z;
         return this;
     }
 
@@ -57,56 +52,6 @@ public abstract class MutableParticleData implements ParticleSource {
         return this;
     }
 
-    @Override
-    public ParticleWriter writer() {
-        return new ParticleWriter() {
-            boolean read;
-
-            @Override
-            public void write(ByteBuf buf) {
-                if (read) throw new NoSuchElementException();
-                MutableParticleData.this.write(buf);
-                read = true;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return !read;
-            }
-        };
-    }
-
-    @Override
-    public int size() {
-        return 1;
-    }
-
-    public double x() {
-        return x;
-    }
-
-    public MutableParticleData x(double x) {
-        this.x = x;
-        return this;
-    }
-
-    public double y() {
-        return y;
-    }
-
-    public MutableParticleData y(double y) {
-        this.y = y;
-        return this;
-    }
-
-    public double z() {
-        return z;
-    }
-
-    public MutableParticleData z(double z) {
-        this.z = z;
-        return this;
-    }
 
     public float xDist() {
         return xDist;

@@ -1,6 +1,5 @@
 package dev.by1337.fparticle;
 
-import dev.by1337.fparticle.netty.buffer.ByteBufPool;
 import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
 import dev.by1337.fparticle.particle.ParticleSource;
 import dev.by1337.fparticle.via.ViaHook;
@@ -12,9 +11,11 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.AttributeKey;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     private static final long FLUSH_DELAY = TimeUnit.MILLISECONDS.toNanos(50);
@@ -25,11 +26,13 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     private final Channel channel;
     private final int protocolVersion;
     private long lastFlushTime;
-    private ChannelHandlerContext ctx;
-    private final ByteBufPool pool;
+    private @Nullable ChannelHandlerContext ctx;
+    // private final ByteBufPool pool;
     private final ViaHook.ViaMutator viaMutator;
     private boolean ready;
     private final UUID uuid;
+    private @Nullable ByteBuf buf;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public ParticleReceiver(Channel channel, Player player) {
         this.channel = channel;
@@ -38,21 +41,27 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
         channel.attr(ATTRIBUTE).set(this);
         ready = FParticleUtil.canReceiveParticles(player);
         uuid = player.getUniqueId();
-        pool = new ByteBufPool(channel.alloc(), 1024, 50, 8, this::write);
+        // pool = new ByteBufPool(channel.alloc(), 1024, 50, 8, this::write);
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         this.ctx = ctx;
-        pool.setClosed(false);
+        // pool.setClosed(false);
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         super.handlerRemoved(ctx);
         this.ctx = null;
-        pool.setClosed(true);
+        lock.lock();
+        if (buf != null) {
+            buf.release();
+            buf = null;
+        }
+        lock.unlock();
+        // pool.setClosed(true);
         close();
     }
 
@@ -70,6 +79,7 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
         super.close(ctx, promise);
         close();
     }
+
 
     public boolean ready() {
         if (!ready) {
@@ -90,34 +100,60 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
             return;
         }
         ctx.write(buf);
-        flushIfDue();
+        //  flushIfDue();
     }
 
-    public ByteBuf writeAndGetSlice(ParticleSource particles) {
+    public ByteBuf writeAndGetRetainedSlice(ParticleSource particles, double x, double y, double z) {
         if (!ready()) return null;
-        var pooled = pool.acquire();
+        lock.lock();
+        // var pooled = pool.acquire();
         try {
-            return ByteBufUtil.writeAndGetSlice(pooled.buf(), particles, viaMutator);
+            return ByteBufUtil.writeAndGetRetainedSlice(getBuf(), particles, viaMutator, x, y, z);
         } finally {
-            pool.release(pooled);
-            flushIfDue();
+            lock.unlock();
+            //  pool.release(pooled);
+            // flushIfDue();
         }
     }
 
-    public void write(ParticleSource particles) {
+    public void write(ParticleSource particles, double x, double y, double z) {
         if (!ready()) return;
-        var pooled = pool.acquire();
+        //var pooled = pool.acquire();
+        lock.lock();
         try {
-            ByteBufUtil.writeParticle(pooled.buf(), particles, viaMutator);
+            ByteBufUtil.writeParticle(getBuf(), particles, viaMutator, x, y, z);
         } finally {
-            pool.release(pooled);
+            lock.unlock();
+            // pool.release(pooled);
         }
+    }
+
+    private ByteBuf getBuf() {
+        if (!lock.isHeldByCurrentThread()) throw new IllegalStateException("Not held by current thread");
+        if (buf == null) {
+            buf = channel.alloc().buffer();
+        }
+        return buf;
     }
 
 
     public void flush() {
         lastFlushTime = System.nanoTime();
-        pool.flushExpired();
+        // pool.flushExpired();
+        lock.lock();
+        try {
+            if (buf != null && buf.isReadable()) {
+                if (ctx != null) {
+                    ctx.write(buf);
+                } else {
+                    buf.release();
+                }
+                buf = null;
+            }
+        }finally {
+            lock.unlock();
+        }
+
         if (ctx != null) {
             ctx.flush();
         }
@@ -130,4 +166,7 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
         return protocolVersion;
     }
 
+    public ViaHook.ViaMutator viaMutator() {
+        return viaMutator;
+    }
 }

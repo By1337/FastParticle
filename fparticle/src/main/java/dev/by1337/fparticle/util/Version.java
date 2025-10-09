@@ -11,18 +11,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-public class Version {
-
-    @NotNull
-    private final String ver;
-    private final int protocolVersion;
+public record Version(@NotNull String ver, int protocolVersion) {
 
     public static final Version VERSION;
-
-    Version(@NotNull String version, int protocolVersion) {
-        this.ver = version;
-        this.protocolVersion = protocolVersion;
-    }
 
     static {
         try (InputStream stream = Bukkit.getServer().getClass().getResourceAsStream("/version.json")) {
@@ -43,13 +34,5 @@ public class Version {
             throw new RuntimeException(e);
         }
 
-    }
-
-    public @NotNull String ver() {
-        return ver;
-    }
-
-    public int protocolVersion() {
-        return protocolVersion;
     }
 }

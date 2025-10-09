@@ -11,13 +11,17 @@ public class ParticleSender implements Closeable {
     private int freeBuffIdx = 0;
     private final ByteBuf[] bufs = new ByteBuf[32];
     private ParticleSource particleSource;
+    private final double x, y,  z;
 
-    public ParticleSender(ParticleSource particleSource) {
+    public ParticleSender(ParticleSource particleSource,  double x, double y, double z) {
         this.particleSource = particleSource;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     public void send(ParticleReceiver receiver) {
-        freeBuffIdx = send(receiver, particleSource, protocols, freeBuffIdx, bufs);
+        freeBuffIdx = send(receiver, particleSource, protocols, freeBuffIdx, bufs, x, y, z);
     }
 
     public ParticleSource particleSource() {
@@ -42,14 +46,14 @@ public class ParticleSender implements Closeable {
         reset();
     }
 
-    static int send(ParticleReceiver receiver, ParticleSource particles, int[] protocols, int freeBuffIdx, ByteBuf[] bufs) {
+    static int send(ParticleReceiver receiver, ParticleSource particles, int[] protocols, int freeBuffIdx, ByteBuf[] bufs,  double x, double y, double z) {
         if (receiver == null) return freeBuffIdx;
         int protocol = receiver.protocolVersion();
         int idx = protocol % 32;
         int packed = protocols[idx];
         int storedProtocol = packed & 0xFFFFFF;
         if (packed == 0) {
-            ByteBuf buf = receiver.writeAndGetSlice(particles);
+            ByteBuf buf = receiver.writeAndGetRetainedSlice(particles, x, y, z);
             if (buf != null) {
                 bufs[freeBuffIdx] = buf;
                 protocols[idx] = ((freeBuffIdx & 0xFF) << 24) | (protocol & 0xFFFFFF);
@@ -60,7 +64,7 @@ public class ParticleSender implements Closeable {
             ByteBuf buf = bufs[bufIdx];
             receiver.write(buf.retainedDuplicate());
         } else {
-            receiver.write(particles);
+            receiver.write(particles, x, y, z);
         }
         return freeBuffIdx;
     }

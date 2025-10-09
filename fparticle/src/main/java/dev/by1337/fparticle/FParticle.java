@@ -13,30 +13,30 @@ public class FParticle {
         return FParticleUtil.getChannel(player).attr(ParticleReceiver.ATTRIBUTE).get();
     }
 
-    public static void send(ParticleReceiver receiver, ParticleSource particle) {
-        receiver.write(particle);
+    public static void send(ParticleReceiver receiver, ParticleSource particle,  double x, double y, double z) {
+        receiver.write(particle,  x, y, z);
     }
 
-    public static void send(Player receiver, ParticleSource particle) {
-        getReceiver(receiver).write(particle);
+    public static void send(Player receiver, ParticleSource particle,  double x, double y, double z) {
+        getReceiver(receiver).write(particle,  x, y, z);
     }
 
-    public static void sendParticles(Collection<ParticleReceiver> receivers, ParticleSource particles) {
-        sendParticle(receivers, particles, Function.identity());
+    public static void sendParticles(Collection<ParticleReceiver> receivers, ParticleSource particles,  double x, double y, double z) {
+        sendParticle(receivers, particles, Function.identity(),  x, y, z);
     }
 
-    public static void sendParticle(Collection<Player> receivers, ParticleSource particles) {
-        sendParticle(receivers, particles, FParticle::getReceiver);
+    public static void sendParticle(Collection<Player> receivers, ParticleSource particles, double x, double y, double z) {
+        sendParticle(receivers, particles, FParticle::getReceiver,  x, y, z);
     }
 
-    private static <T> void sendParticle(Collection<T> receivers, ParticleSource particles, Function<T, ParticleReceiver> mapper) {
+    private static <T> void sendParticle(Collection<T> receivers, ParticleSource particles, Function<T, ParticleReceiver> mapper,  double x, double y, double z) {
         final int[] protocols = new int[32];
         int freeBuffIdx = 0;
         final ByteBuf[] bufs = new ByteBuf[32];
         try {
             for (T receiver0 : receivers) {
                 ParticleReceiver receiver = mapper.apply(receiver0);
-                freeBuffIdx = ParticleSender.send(receiver, particles, protocols, freeBuffIdx, bufs);
+                freeBuffIdx = ParticleSender.send(receiver, particles, protocols, freeBuffIdx, bufs, x, y, z);
             }
         } finally {
             for (int i = 0; i < freeBuffIdx; i++) {

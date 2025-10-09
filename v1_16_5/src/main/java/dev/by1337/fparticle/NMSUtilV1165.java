@@ -1,9 +1,6 @@
 package dev.by1337.fparticle;
 
 import dev.by1337.fparticle.particle.MutableParticleData;
-import dev.by1337.fparticle.util.DistMutator;
-import dev.by1337.fparticle.util.PosMutator;
-import dev.by1337.fparticle.util.Vec3f;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import net.minecraft.core.Registry;
@@ -18,7 +15,6 @@ import org.bukkit.Particle;
 import org.bukkit.craftbukkit.CraftParticle;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -31,6 +27,7 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
     public boolean canReciveParticles(Player player) {
         return ((CraftPlayer) player).getHandle().networkManager.protocol == ConnectionProtocol.PLAY;
     }
+
     @Override
     public Channel getChannel(Player player) {
         return ((CraftPlayer) player).getHandle().networkManager.channel;
@@ -41,36 +38,9 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
         return id;
     }
 
-    public int getCompressionThreshold(){
+    public int getCompressionThreshold() {
         return MinecraftServer.getServer().getCompressionThreshold();
     }
-
-    private static final int POS_OFFSET = Integer.BYTES + Byte.BYTES;
-    private static final int D_SIZE = Double.BYTES;
-
-    public void mutatePos(int startIndex, ByteBuf buf, PosMutator mutator, Vector vector) {
-        vector.setX(buf.getDouble(startIndex + POS_OFFSET));
-        vector.setY(buf.getDouble(startIndex + POS_OFFSET + D_SIZE));
-        vector.setZ(buf.getDouble(startIndex + POS_OFFSET + D_SIZE * 2));
-        mutator.mutate(vector);
-        buf.setDouble(startIndex + POS_OFFSET, vector.getX());
-        buf.setDouble(startIndex + POS_OFFSET + D_SIZE, vector.getY());
-        buf.setDouble(startIndex + POS_OFFSET + D_SIZE * 2, vector.getZ());
-    }
-
-    private static final int DIST_OFFSET = POS_OFFSET + D_SIZE * 3;
-    private static final int F_SIZE = Float.BYTES;
-
-    public void mutateDist(int startIndex, ByteBuf buf, DistMutator mutator, Vec3f vec) {
-        vec.x = buf.getFloat(startIndex + DIST_OFFSET);
-        vec.y = buf.getFloat(startIndex + DIST_OFFSET + F_SIZE);
-        vec.z = buf.getFloat(startIndex + DIST_OFFSET + F_SIZE * 2);
-        mutator.mutate(vec);
-        buf.setFloat(startIndex + DIST_OFFSET, vec.x);
-        buf.setFloat(startIndex + DIST_OFFSET + F_SIZE, vec.y);
-        buf.setFloat(startIndex + DIST_OFFSET + F_SIZE * 2, vec.z);
-    }
-
 
     @Override
     public MutableParticleData newParticle() {
@@ -79,19 +49,19 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
             private int particleID = -1;
 
             @Override
-            public void write(ByteBuf buf) {
+            public void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist) {
                 if (options == null) {
                     options = CraftParticle.toNMS(particle, data);
                     particleID = getParticleId(particle, data);
                 }
                 buf.writeInt(particleID);
                 buf.writeBoolean(this.overrideLimiter);
-                buf.writeDouble(this.x);
-                buf.writeDouble(this.y);
-                buf.writeDouble(this.z);
-                buf.writeFloat(this.xDist);
-                buf.writeFloat(this.yDist);
-                buf.writeFloat(this.zDist);
+                buf.writeDouble(x);
+                buf.writeDouble(y);
+                buf.writeDouble(z);
+                buf.writeFloat(xDist);
+                buf.writeFloat(yDist);
+                buf.writeFloat(zDist);
                 buf.writeFloat(this.maxSpeed);
                 buf.writeInt(this.count);
                 options.writeToNetwork(new FriendlyByteBuf(buf));
