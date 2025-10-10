@@ -9,21 +9,29 @@ import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
+
 public class ParticleWriter {
     public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
     //  public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
     private final double x, y, z;
-    private final ByteBuf out;
-    private final ViaHook.ViaMutator via;
+    private final Consumer<ParticleWriter> onWrite;
+    private ByteBuf out;
+    private ViaHook.ViaMutator via;
 
-    public ParticleWriter(double x, double y, double z, ByteBuf out, ViaHook.ViaMutator via) {
+
+    public ParticleWriter(double x, double y, double z, Consumer<ParticleWriter> onWrite) {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.out = out;
+        this.onWrite = onWrite;
+    }
+    public void accept(ViaHook.ViaMutator via, ByteBuf out) {
         this.via = via;
+        this.out = out;
+        onWrite.accept(this);
     }
 
     public final void write(MutableParticleData particle, double x, double y, double z) {

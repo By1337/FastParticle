@@ -1,6 +1,5 @@
 package dev.by1337.fparticle.netty.buffer;
 
-import com.viaversion.viaversion.exception.InformativeException;
 import dev.by1337.fparticle.FParticleUtil;
 import dev.by1337.fparticle.particle.ParticleSource;
 import dev.by1337.fparticle.via.ViaHook;
@@ -14,7 +13,7 @@ public class ByteBufUtil {
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
 
-    public static ByteBuf writeAndGetRetainedSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via,  double x, double y, double z) {
+/*    public static ByteBuf writeAndGetRetainedSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via,  double x, double y, double z) {
         int start = out.writerIndex();
         writeParticle(out, particles, via,  x, y, z);
         int end = out.writerIndex();
@@ -23,8 +22,8 @@ public class ByteBufUtil {
 
 
     public static void writeParticle(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via, double x, double y, double z) {
-        particles.write(x, y, z, out, via);
-    }
+        particles.newWriter(x, y, z, out, via);
+    }*/
 
     public static void writeVarInt1(ByteBuf buf, int value) {
         buf.writeByte(value);

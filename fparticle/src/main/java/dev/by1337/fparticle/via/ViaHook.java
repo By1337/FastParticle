@@ -16,6 +16,7 @@ public class ViaHook {
     public static ViaMutator getViaMutator(Player player, Channel channel) {
         if (!HAS_VIA) return ViaMutator.NATIVE;
         UserConnection connection = Via.getAPI().getConnection(player.getUniqueId());
+        if (connection == null) return ViaMutator.NATIVE;
         if (!connection.shouldTransformPacket()) return ViaMutator.NATIVE;
 
         return new ViaMutator(
@@ -39,7 +40,8 @@ public class ViaHook {
 
     public record ViaMutator(int protocol, Consumer<ByteBuf> mutator) {
         private static final int NATIVE_PROTOCOL = Version.VERSION.protocolVersion();
-        public static ViaMutator NATIVE = new ViaMutator(NATIVE_PROTOCOL, b -> {});
+        public static ViaMutator NATIVE = new ViaMutator(NATIVE_PROTOCOL, b -> {
+        });
 
         public boolean shouldTransformPacket() {
             return NATIVE_PROTOCOL != protocol;

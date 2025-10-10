@@ -1,7 +1,7 @@
 package dev.by1337.fparticle.netty;
 
 import dev.by1337.fparticle.FParticleUtil;
-import dev.by1337.fparticle.ParticleReceiver;
+import dev.by1337.fparticle.netty.handler.ParticleEncoder;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -25,8 +25,8 @@ public class FParticleHooker implements Listener, Closeable {
         Bukkit.getOnlinePlayers().forEach(this::hook);
     }
 
-    public ParticleReceiver getReceiver(Player player) {
-        return FParticleUtil.getChannel(player).attr(ParticleReceiver.ATTRIBUTE).get();
+    public ParticleEncoder getReceiver(Player player) {
+        return FParticleUtil.getChannel(player).attr(ParticleEncoder.ATTRIBUTE).get();
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -36,7 +36,7 @@ public class FParticleHooker implements Listener, Closeable {
 
     private void hook(Player player) {
         Channel channel = FParticleUtil.getChannel(player);
-        channel.pipeline().addBefore("prepender", handlerName, new ParticleReceiver(channel, player));
+        channel.pipeline().addBefore("prepender", handlerName, new ParticleEncoder(channel, player));
     }
 
     @Override

@@ -105,9 +105,9 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
             @Override
             public void run() {
                 var loc = player.getLocation();
-                long nanos = System.nanoTime();
+             //   long nanos = System.nanoTime();
                 FParticle.send(player, SPHERE, loc.getX(), loc.getY(), loc.getZ());
-                System.out.println((System.nanoTime() - nanos) / 1000 + "us");
+              //  System.out.println((System.nanoTime() - nanos) / 1000 + "us");
             }
         }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
         return true;

@@ -1,5 +1,7 @@
+/*
 package dev.by1337.fparticle;
 
+import dev.by1337.fparticle.netty.handler.ParticleEncoder;
 import dev.by1337.fparticle.particle.ParticleSource;
 import io.netty.buffer.ByteBuf;
 
@@ -11,16 +13,12 @@ public class ParticleSender implements Closeable {
     private int freeBuffIdx = 0;
     private final ByteBuf[] bufs = new ByteBuf[32];
     private ParticleSource particleSource;
-    private final double x, y,  z;
 
-    public ParticleSender(ParticleSource particleSource,  double x, double y, double z) {
+    public ParticleSender(ParticleSource particleSource) {
         this.particleSource = particleSource;
-        this.x = x;
-        this.y = y;
-        this.z = z;
     }
 
-    public void send(ParticleReceiver receiver) {
+    public void send(ParticleEncoder receiver, double x, double y, double z) {
         freeBuffIdx = send(receiver, particleSource, protocols, freeBuffIdx, bufs, x, y, z);
     }
 
@@ -46,7 +44,7 @@ public class ParticleSender implements Closeable {
         reset();
     }
 
-    static int send(ParticleReceiver receiver, ParticleSource particles, int[] protocols, int freeBuffIdx, ByteBuf[] bufs,  double x, double y, double z) {
+    static int send(ParticleEncoder receiver, ParticleSource particles, int[] protocols, int freeBuffIdx, ByteBuf[] bufs, double x, double y, double z) {
         if (receiver == null) return freeBuffIdx;
         int protocol = receiver.protocolVersion();
         int idx = protocol % 32;
@@ -69,3 +67,4 @@ public class ParticleSender implements Closeable {
         return freeBuffIdx;
     }
 }
+*/
