@@ -10,6 +10,7 @@ import dev.by1337.fparticle.particle.ParticleWriter;
 import dev.by1337.fparticle.util.Version;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -31,7 +32,8 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
         private final Random random = new Random();
         private final MutableParticleData particle = MutableParticleData.createNew()
                 .maxSpeed(0.2f)
-                .particle(Particle.SOUL);
+                .data(new Particle.DustOptions(Color.AQUA, 1f))
+                .particle(Particle.REDSTONE);
 
         @Override
         protected void onWrite(ParticleWriter writer) {

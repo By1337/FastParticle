@@ -4,6 +4,7 @@ import dev.by1337.fparticle.particle.MutableParticleData;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import net.minecraft.core.Registry;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.ConnectionProtocol;

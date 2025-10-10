@@ -7,6 +7,8 @@ import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
 import dev.by1337.fparticle.particle.MutableParticleData;
 import dev.by1337.fparticle.util.Version;
 import io.netty.buffer.ByteBuf;
+import org.bukkit.Color;
+import org.bukkit.Particle;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,8 @@ public class FastVia {
     private static final Logger log = LoggerFactory.getLogger(FastVia.class);
 
     public static boolean write(int likeA, ByteBuf out, MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
+        Object data = particle.data();
+        if (data != null && !(data instanceof Particle.DustOptions)) return false;
         if (likeA < MIN_VERSION || likeA > MAX_VERSION) return false;
         int i = likeA - MIN_VERSION;
         Upper upper = uppers[i];
@@ -37,6 +41,12 @@ public class FastVia {
         return true;
     }
 
+    /// | Версии  | particle ID   | overrideLimiter | alwaysShow | x/y/z (double) | xDist/yDist/zDist (float) | maxSpeed | count | particle StreamCodec |
+    /// | ------- | ------------- | --------------- | ---------- | -------------- | ------------------------- | -------- | ----- | -------------------- |
+    /// | 754–758 | `writeInt`    | ✅              | —          | ✅              | ✅                       | ✅      | ✅     | ✅                  |
+    /// | 759–765 | `writeVarInt` | ✅              | —          | ✅              | ✅                       | ✅      | ✅     | ✅                  |
+    /// | 766–768 | —             | ✅              | —          | ✅              | ✅                       | ✅      | ✅     | ✅                  |
+    /// | 769–773 | —             | ✅              | ✅         | ✅              | ✅                       | ✅      | ✅     | ✅                  |
     private static void writeLike(int version, int particleID, int packetId, ByteBuf out, MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
         ByteBufUtil.writeVarInt1(out, packetId);
 
@@ -54,14 +64,6 @@ public class FastVia {
             ByteBufUtil.writeVarInt(out, particleID);
         }
 
-        writeBody755To768(out, particle, b, x, y, z, xDist, yDist, zDist);
-
-        if (version >= 766) {
-            ByteBufUtil.writeVarInt(out, particleID);
-        }
-    }
-
-    private static void writeBody755To768(ByteBuf out, MutableParticleData particle, boolean b, double x, double y, double z, float xDist, float yDist, float zDist) {
         out.writeBoolean(b);
         out.writeDouble(x);
         out.writeDouble(y);
@@ -71,6 +73,22 @@ public class FastVia {
         out.writeFloat(zDist);
         out.writeFloat(particle.maxSpeed());
         out.writeInt(particle.count());
+
+        if (version >= 766) {
+            ByteBufUtil.writeVarInt(out, particleID);
+        }
+        if (particle.data() instanceof Particle.DustOptions dist) {
+            if (version <= 767) {
+                Color color = dist.getColor();
+                out.writeFloat(color.getRed() / 255f);
+                out.writeFloat(color.getGreen() / 255f);
+                out.writeFloat(color.getBlue() / 255f);
+                out.writeFloat(dist.getSize());
+            } else if (version <= 773) {//warn: не забыть обновить при обновлении
+                out.writeInt(dist.getColor().asRGB());
+                out.writeFloat(dist.getSize());
+            }
+        }
     }
 
     static {

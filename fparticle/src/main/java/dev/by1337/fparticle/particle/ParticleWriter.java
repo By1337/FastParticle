@@ -57,7 +57,7 @@ public class ParticleWriter {
         if (!via.shouldTransformPacket()) {
             writeParticleId();
             particle.write(out, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist);
-        } else if (particle.data() != null || !FastVia.write(via.protocol(), out, particle, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist)) {
+        } else if (!FastVia.write(via.protocol(), out, particle, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist)) {
             writeParticleId();
             particle.write(out, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist);
             try {

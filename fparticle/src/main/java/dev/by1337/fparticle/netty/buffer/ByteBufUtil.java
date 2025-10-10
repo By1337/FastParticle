@@ -1,8 +1,6 @@
 package dev.by1337.fparticle.netty.buffer;
 
 import dev.by1337.fparticle.FParticleUtil;
-import dev.by1337.fparticle.particle.ParticleSource;
-import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +36,17 @@ public class ByteBufUtil {
     }
 
     public static void writeVarInt(ByteBuf buf, int value) {
+        if ((value & (0xFFFFFFFF << 7)) == 0) {
+            buf.writeByte(value);
+        } else if ((value & (0xFFFFFFFF << 14)) == 0) {
+            int w = (value & 0x7F | 0x80) << 8 | (value >>> 7);
+            buf.writeShort(w);
+        } else {
+            ByteBufUtil.writeVarIntFull(buf, value);
+        }
+    }
+
+    public static void writeVarIntFull(ByteBuf buf, int value) {
         if ((value & (0xFFFFFFFF << 7)) == 0) {
             buf.writeByte(value);
         } else if ((value & (0xFFFFFFFF << 14)) == 0) {
