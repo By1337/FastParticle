@@ -3,6 +3,7 @@ package dev.by1337.fparticle.particle;
 import com.viaversion.viaversion.exception.InformativeException;
 import dev.by1337.fparticle.FParticleUtil;
 import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
+import dev.by1337.fparticle.via.FastVia;
 import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -10,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class ParticleWriter {
     public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
-  //  public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
+    //  public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
     private final double x, y, z;
@@ -25,7 +26,7 @@ public class ParticleWriter {
         this.via = via;
     }
 
-    public void write(MutableParticleData particle, double x, double y, double z) {
+    public final void write(MutableParticleData particle, double x, double y, double z) {
         write(particle, x, y, z, particle.xDist, particle.yDist, particle.zDist);
     }
 
@@ -33,7 +34,7 @@ public class ParticleWriter {
     // compress size varInt
     // packet id varInt
     // packet payload
-    public void write(MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
+    public final void write(MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
         int startBlockPtr = out.writerIndex();
         // пишем prepender size в два байта, максимум 2^14,
         // этого достаточно так как если размер будет больше чем COMPRESSION_THRESHOLD это значение перезапишется после сжатия
@@ -45,14 +46,12 @@ public class ParticleWriter {
 
         int packetStart = out.writerIndex();
 
-        if ((PACKET_ID & (0xFFFFFFFF << 7)) == 0) {
-            ByteBufUtil.writeVarInt1(out, PACKET_ID);
-        } else if ((PACKET_ID & (0xFFFFFFFF << 14)) == 0) {
-            ByteBufUtil.writeVarInt2(out, PACKET_ID);
-        }
-        particle.write(out, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist);
-
-        if (via.shouldTransformPacket()) {
+        if (!via.shouldTransformPacket()) {
+            writeParticleId();
+            particle.write(out, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist);
+        } else if (particle.data() != null || !FastVia.write(via.protocol(), out, particle, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist)) {
+            writeParticleId();
+            particle.write(out, this.x + x, this.y + y, this.z + z, xDist, yDist, zDist);
             try {
                 // без slice via не умеет
                 var slice = out.slice(packetStart, out.writerIndex() - packetStart);
@@ -73,6 +72,13 @@ public class ParticleWriter {
         // if (size < COMPRESSION_THRESHOLD) {
         ByteBufUtil.setVarInt2(out, startBlockPtr, size);
         // }
+    }
+    private void writeParticleId(){
+        if ((PACKET_ID & (0xFFFFFFFF << 7)) == 0) {
+            ByteBufUtil.writeVarInt1(out, PACKET_ID);
+        } else if ((PACKET_ID & (0xFFFFFFFF << 14)) == 0) {
+            ByteBufUtil.writeVarInt2(out, PACKET_ID);
+        }
     }
 
 }

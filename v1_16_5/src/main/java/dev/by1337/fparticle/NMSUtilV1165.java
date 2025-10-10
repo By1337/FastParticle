@@ -49,6 +49,14 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
             private int particleID = -1;
 
             @Override
+            public int particleId() {
+                if (particleID == -1){
+                    particleID = getParticleId(particle, data);
+                }
+                return particleID;
+            }
+
+            @Override
             public void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist) {
                 if (options == null) {
                     options = CraftParticle.toNMS(particle, data);
@@ -81,7 +89,7 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
         };
     }
 
-    private static int getParticleId(Particle particle, @Nullable Object data) {
+    public int getParticleId(Particle particle, @Nullable Object data) {
         int val = PARTICLE_TO_ID[particle.ordinal()];
         if (val != -1) return val;
         var nms = CraftParticle.toNMS(particle, data);

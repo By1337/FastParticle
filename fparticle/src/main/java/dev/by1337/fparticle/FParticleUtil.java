@@ -2,7 +2,9 @@ package dev.by1337.fparticle;
 
 import dev.by1337.fparticle.particle.MutableParticleData;
 import io.netty.channel.Channel;
+import org.bukkit.Particle;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 public final class FParticleUtil {
     static NmsAccessor instance;
@@ -39,5 +41,6 @@ public final class FParticleUtil {
 
         public abstract MutableParticleData newParticle();
 
+        public abstract int getParticleId(Particle particle, @Nullable Object data);
     }
 }

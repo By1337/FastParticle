@@ -27,7 +27,6 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
     private final int protocolVersion;
     private long lastFlushTime;
     private @Nullable ChannelHandlerContext ctx;
-    // private final ByteBufPool pool;
     private final ViaHook.ViaMutator viaMutator;
     private boolean ready;
     private final UUID uuid;
@@ -41,14 +40,12 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
         channel.attr(ATTRIBUTE).set(this);
         ready = FParticleUtil.canReceiveParticles(player);
         uuid = player.getUniqueId();
-        // pool = new ByteBufPool(channel.alloc(), 1024, 50, 8, this::write);
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         this.ctx = ctx;
-        // pool.setClosed(false);
     }
 
     @Override
@@ -61,7 +58,6 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
             buf = null;
         }
         lock.unlock();
-        // pool.setClosed(true);
         close();
     }
 
@@ -100,31 +96,25 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
             return;
         }
         ctx.write(buf);
-        //  flushIfDue();
     }
 
     public ByteBuf writeAndGetRetainedSlice(ParticleSource particles, double x, double y, double z) {
         if (!ready()) return null;
         lock.lock();
-        // var pooled = pool.acquire();
         try {
             return ByteBufUtil.writeAndGetRetainedSlice(getBuf(), particles, viaMutator, x, y, z);
         } finally {
             lock.unlock();
-            //  pool.release(pooled);
-            // flushIfDue();
         }
     }
 
     public void write(ParticleSource particles, double x, double y, double z) {
         if (!ready()) return;
-        //var pooled = pool.acquire();
         lock.lock();
         try {
             ByteBufUtil.writeParticle(getBuf(), particles, viaMutator, x, y, z);
         } finally {
             lock.unlock();
-            // pool.release(pooled);
         }
     }
 
@@ -139,7 +129,6 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
 
     public void flush() {
         lastFlushTime = System.nanoTime();
-        // pool.flushExpired();
         lock.lock();
         try {
             if (buf != null && buf.isReadable()) {
@@ -150,7 +139,7 @@ public class ParticleReceiver extends MessageToByteEncoder<ByteBuf> {
                 }
                 buf = null;
             }
-        }finally {
+        } finally {
             lock.unlock();
         }
 

@@ -31,6 +31,8 @@ public abstract class MutableParticleData {
                 ;
     }
 
+    public abstract int particleId();
+
     public static MutableParticleData createNew() {
         return FParticleUtil.newParticle();
     }
