@@ -1,7 +1,7 @@
 package dev.by1337.fparticle.netty.handler;
 
 import dev.by1337.fparticle.FParticleUtil;
-import dev.by1337.fparticle.particle.ParticleWriter;
+import dev.by1337.fparticle.particle.ParticleOutputStream;
 import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class ParticleEncoder extends MessageToByteEncoder<ParticleWriter> {
+public class ParticleEncoder extends MessageToByteEncoder<ParticleOutputStream> {
     public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
@@ -36,7 +36,7 @@ public class ParticleEncoder extends MessageToByteEncoder<ParticleWriter> {
 
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, ParticleWriter writer, ByteBuf byteBuf) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, ParticleOutputStream writer, ByteBuf byteBuf) throws Exception {
         long nanos = System.nanoTime();
         writer.accept(viaMutator, byteBuf);
         System.out.println((System.nanoTime() - nanos) / 1000D + "us");

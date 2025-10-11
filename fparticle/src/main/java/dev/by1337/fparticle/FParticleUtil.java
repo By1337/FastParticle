@@ -1,7 +1,7 @@
 package dev.by1337.fparticle;
 
-import dev.by1337.fparticle.particle.MutableParticleData;
-import dev.by1337.fparticle.particle.ParticleWriter;
+import dev.by1337.fparticle.particle.ParticleData;
+import dev.by1337.fparticle.particle.ParticleOutputStream;
 import io.netty.channel.Channel;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
@@ -23,25 +23,25 @@ public final class FParticleUtil {
         return instance.getCompressionThreshold();
     }
 
-    public static MutableParticleData newParticle() {
-        return instance.newParticle();
+    public static ParticleData newParticle(ParticleData.Builder builder) {
+        return instance.newParticle(builder);
     }
-    public static void send(Player player, ParticleWriter writer){
+    public static void send(Player player, ParticleOutputStream writer){
         var v = getChannel(player);
         if (v != null) v.write(writer);
     }
 
 
-    protected static abstract class NmsAccessor {
+    public interface NmsAccessor {
 
-        public abstract Channel getChannel(Player player);
+        Channel getChannel(Player player);
 
-        public abstract int getLevelParticlesPacketId();
+        int getLevelParticlesPacketId();
 
-        public abstract int getCompressionThreshold();
+        int getCompressionThreshold();
 
-        public abstract MutableParticleData newParticle();
+        ParticleData newParticle(ParticleData.Builder builder);
 
-        public abstract int getParticleId(Particle particle, @Nullable Object data);
+        int getParticleId(Particle particle, @Nullable Object data);
     }
 }

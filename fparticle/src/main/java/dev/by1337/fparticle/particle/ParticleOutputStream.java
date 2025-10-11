@@ -11,18 +11,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-public class ParticleWriter {
+public class ParticleOutputStream {
     public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
     //  public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
     private final double x, y, z;
-    private final Consumer<ParticleWriter> onWrite;
+    private final Consumer<ParticleOutputStream> onWrite;
     private ByteBuf out;
     private ViaHook.ViaMutator via;
 
 
-    public ParticleWriter(double x, double y, double z, Consumer<ParticleWriter> onWrite) {
+    public ParticleOutputStream(double x, double y, double z, Consumer<ParticleOutputStream> onWrite) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -34,7 +34,7 @@ public class ParticleWriter {
         onWrite.accept(this);
     }
 
-    public final void write(MutableParticleData particle, double x, double y, double z) {
+    public final void write(ParticleData particle, double x, double y, double z) {
         write(particle, x, y, z, particle.xDist, particle.yDist, particle.zDist);
     }
 
@@ -42,7 +42,7 @@ public class ParticleWriter {
     // compress size varInt
     // packet id varInt
     // packet payload
-    public final void write(MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
+    public final void write(ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
         int startBlockPtr = out.writerIndex();
         // пишем prepender size в два байта, максимум 2^14,
         // этого достаточно так как если размер будет больше чем COMPRESSION_THRESHOLD это значение перезапишется после сжатия

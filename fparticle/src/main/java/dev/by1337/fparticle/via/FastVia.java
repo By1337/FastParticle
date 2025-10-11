@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
-import dev.by1337.fparticle.particle.MutableParticleData;
+import dev.by1337.fparticle.particle.ParticleData;
 import dev.by1337.fparticle.util.Version;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Color;
@@ -28,16 +28,16 @@ public class FastVia {
     private static final Upper[] uppers = new Upper[MAX_VERSION - MIN_VERSION + 1];
     private static final Logger log = LoggerFactory.getLogger(FastVia.class);
 
-    public static boolean write(int likeA, ByteBuf out, MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
-        Object data = particle.data();
+    public static boolean write(int version, ByteBuf out, ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
+        Object data = particle.data;
         if (data != null && !(data instanceof Particle.DustOptions)) return false;
-        if (likeA < MIN_VERSION || likeA > MAX_VERSION) return false;
-        int i = likeA - MIN_VERSION;
+        if (version < MIN_VERSION || version > MAX_VERSION) return false;
+        int i = version - MIN_VERSION;
         Upper upper = uppers[i];
         if (upper == null) return false;
         int id = upper.up(particle.particleId());
         if (id == -1) return false;
-        writeLike(likeA, id, upper.packetId, out, particle, x, y, z, xDist, yDist, zDist);
+        writeLike(version, id, upper.packetId, out, particle, x, y, z, xDist, yDist, zDist);
         return true;
     }
 
@@ -47,15 +47,15 @@ public class FastVia {
     /// | 759–765 | `writeVarInt` | ✅              | —          | ✅              | ✅                       | ✅      | ✅     | ✅                  |
     /// | 766–768 | —             | ✅              | —          | ✅              | ✅                       | ✅      | ✅     | ✅                  |
     /// | 769–773 | —             | ✅              | ✅         | ✅              | ✅                       | ✅      | ✅     | ✅                  |
-    private static void writeLike(int version, int particleID, int packetId, ByteBuf out, MutableParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
+    private static void writeLike(int version, int particleID, int packetId, ByteBuf out, ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
         ByteBufUtil.writeVarInt1(out, packetId);
 
         final boolean b;
         if (version >= 769) {
-            out.writeBoolean(particle.overrideLimiter());
-            b = particle.alwaysShow();
+            out.writeBoolean(particle.overrideLimiter);
+            b = particle.alwaysShow;
         } else {
-            b = particle.overrideLimiter();
+            b = particle.overrideLimiter;
         }
 
         if (version < 759) {
@@ -71,22 +71,22 @@ public class FastVia {
         out.writeFloat(xDist);
         out.writeFloat(yDist);
         out.writeFloat(zDist);
-        out.writeFloat(particle.maxSpeed());
-        out.writeInt(particle.count());
+        out.writeFloat(particle.maxSpeed);
+        out.writeInt(particle.count);
 
         if (version >= 766) {
             ByteBufUtil.writeVarInt(out, particleID);
         }
-        if (particle.data() instanceof Particle.DustOptions dist) {
+        if (particle.data instanceof Particle.DustOptions dust) {
             if (version <= 767) {
-                Color color = dist.getColor();
+                Color color = dust.getColor();
                 out.writeFloat(color.getRed() / 255f);
                 out.writeFloat(color.getGreen() / 255f);
                 out.writeFloat(color.getBlue() / 255f);
-                out.writeFloat(dist.getSize());
+                out.writeFloat(dust.getSize());
             } else if (version <= 773) {//warn: не забыть обновить при обновлении
-                out.writeInt(dist.getColor().asRGB());
-                out.writeFloat(dist.getSize());
+                out.writeInt(dust.getColor().asRGB());
+                out.writeFloat(dust.getSize());
             }
         }
     }

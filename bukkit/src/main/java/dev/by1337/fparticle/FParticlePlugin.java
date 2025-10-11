@@ -3,10 +3,9 @@ package dev.by1337.fparticle;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import dev.by1337.fparticle.netty.FParticleHooker;
-import dev.by1337.fparticle.particle.MutableParticleData;
+import dev.by1337.fparticle.particle.ParticleData;
+import dev.by1337.fparticle.particle.ParticleOutputStream;
 import dev.by1337.fparticle.particle.ParticleSource;
-import dev.by1337.fparticle.particle.ParticleSpawner;
-import dev.by1337.fparticle.particle.ParticleWriter;
 import dev.by1337.fparticle.util.Version;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -28,15 +27,16 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
     private static FParticleHooker flusher;
     private static FParticleUtil.NmsAccessor nms = FParticleUtil.instance = create();
 
-    private static final ParticleSource SPHERE = new ParticleSpawner() {
+    private static final ParticleSource SPHERE = new ParticleSource() {
         private final Random random = new Random();
-        private final MutableParticleData particle = MutableParticleData.createNew()
+        private final ParticleData particle = ParticleData.builder()
                 .maxSpeed(0.2f)
                 .data(new Particle.DustOptions(Color.AQUA, 1f))
-                .particle(Particle.REDSTONE);
+                .particle(Particle.REDSTONE)
+                .build();
 
         @Override
-        protected void onWrite(ParticleWriter writer) {
+        public void write(ParticleOutputStream writer, double baseX, double baseY, double baseZ) {
             final double radius = 5;
             for (int i = 0; i < 256; i++) {
                 double phi = random.nextDouble() * Math.PI * 2;
@@ -51,7 +51,11 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
                 float offsetX = (float) (-x / radius);
                 float offsetY = (float) (-y / radius);
                 float offsetZ = (float) (-z / radius);
-                writer.write(particle, x, y, z, offsetX, offsetY, offsetZ);
+                writer.write(particle,
+                        x + baseX,
+                        y + baseY,
+                        z + baseZ
+                        , offsetX, offsetY, offsetZ);
             }
         }
     };
@@ -104,12 +108,11 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         Player player = (Player) sender;
         new BukkitRunnable() {
+            final ParticleSource data = SPHERE.and(SPHERE.shift(0, 10, 0));
             @Override
             public void run() {
                 var loc = player.getLocation();
-             //   long nanos = System.nanoTime();
-                FParticle.send(player, SPHERE, loc.getX(), loc.getY(), loc.getZ());
-              //  System.out.println((System.nanoTime() - nanos) / 1000 + "us");
+                FParticle.send(player, data, loc.getX(), loc.getY(), loc.getZ());
             }
         }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
         return true;

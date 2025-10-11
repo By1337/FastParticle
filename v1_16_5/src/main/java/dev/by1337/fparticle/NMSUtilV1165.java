@@ -1,10 +1,9 @@
 package dev.by1337.fparticle;
 
-import dev.by1337.fparticle.particle.MutableParticleData;
+import dev.by1337.fparticle.particle.ParticleData;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import net.minecraft.core.Registry;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.ConnectionProtocol;
@@ -20,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
+class NMSUtilV1165 implements FParticleUtil.NmsAccessor {
     private static final int[] PARTICLE_TO_ID;
     private final int id = ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, new ClientboundLevelParticlesPacket());
 
@@ -46,8 +45,8 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
     }
 
     @Override
-    public MutableParticleData newParticle() {
-        return new MutableParticleData() {
+    public ParticleData newParticle(ParticleData.Builder builder) {
+        return new ParticleData(builder) {
             private @Nullable ParticleOptions options;
             private int particleID = -1;
 
@@ -76,18 +75,6 @@ class NMSUtilV1165 extends FParticleUtil.NmsAccessor {
                 buf.writeFloat(this.maxSpeed);
                 buf.writeInt(this.count);
                 options.writeToNetwork(new FriendlyByteBuf(buf));
-            }
-
-            @Override
-            public MutableParticleData data(@Nullable Object data) {
-                options = null;
-                return super.data(data);
-            }
-
-            @Override
-            public MutableParticleData particle(Particle particle) {
-                options = null;
-                return super.particle(particle);
             }
         };
     }
