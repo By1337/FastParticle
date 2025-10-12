@@ -128,9 +128,11 @@ public abstract class ParticlePacketBuilder {
         int payloadStart = compressStartIdx + 1;
 
         if (!via.shouldTransformPacket()) {
+            //System.out.println("write NATIVE");
             writeParticleId();
             particle.write(out, x, y, z, xDist, yDist, zDist);
         } else if (!FastVia.write(via.protocol(), out, particle, x, y, z, xDist, yDist, zDist)) {
+          //  System.out.println("write NATIVE+ViaVersion");
             writeParticleId();
             particle.write(out, x, y, z, xDist, yDist, zDist);
             try {
@@ -143,6 +145,8 @@ public abstract class ParticlePacketBuilder {
                 out.writerIndex(prependerStartIdx);
                 return;
             }
+        }else {
+           // System.out.println("write FastVia");
         }
 
         // Вообще надо бы сжать пакет, но пакет вряд ли будет размером больше чем 256 байт
