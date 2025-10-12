@@ -4,7 +4,7 @@
     <parent>
         <groupId>dev.by1337.fparticle</groupId>
         <artifactId>FastParticle-parent</artifactId>
-        <version>1.0</version>
+        <version>1.1</version>
     </parent>
     <artifactId>bukkit</artifactId>
 
@@ -111,12 +111,12 @@
         <dependency>
             <groupId>dev.by1337.fparticle</groupId>
             <artifactId>fparticle</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>dev.by1337.fparticle</groupId>
             <artifactId>v1_16_5</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>

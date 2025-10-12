@@ -83,15 +83,15 @@ public abstract class ParticleData {
 
     public static class Builder {
 
-        private float xDist;
-        private float yDist;
-        private float zDist;
-        private float maxSpeed;
-        private int count;
-        private boolean overrideLimiter;
-        private boolean alwaysShow;
-        private Particle particle;
-        private Object data;
+        public float xDist;
+        public float yDist;
+        public float zDist;
+        public float maxSpeed;
+        public int count;
+        public boolean overrideLimiter;
+        public boolean alwaysShow;
+        public Particle particle;
+        public Object data;
 
         public Builder() {
         }
@@ -168,6 +168,7 @@ public abstract class ParticleData {
         public ParticleData build() {
             return ParticleData.build(this);
         }
+
     }
 
 

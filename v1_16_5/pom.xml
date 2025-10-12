@@ -4,7 +4,7 @@
     <parent>
         <groupId>dev.by1337.fparticle</groupId>
         <artifactId>FastParticle-parent</artifactId>
-        <version>1.0</version>
+        <version>1.1</version>
     </parent>
     <artifactId>v1_16_5</artifactId>
 
@@ -126,7 +126,7 @@
         <dependency>
             <groupId>dev.by1337.fparticle</groupId>
             <artifactId>fparticle</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
             <scope>provided</scope>
         </dependency>
 

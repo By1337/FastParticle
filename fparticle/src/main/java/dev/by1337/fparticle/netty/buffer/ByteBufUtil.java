@@ -1,27 +1,8 @@
 package dev.by1337.fparticle.netty.buffer;
 
-import dev.by1337.fparticle.FParticleUtil;
 import io.netty.buffer.ByteBuf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ByteBufUtil {
-    public static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
-    public static final int COMPRESSION_THRESHOLD = FParticleUtil.getCompressionThreshold();
-    private static final Logger log = LoggerFactory.getLogger("FParticle");
-
-
-/*    public static ByteBuf writeAndGetRetainedSlice(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via,  double x, double y, double z) {
-        int start = out.writerIndex();
-        writeParticle(out, particles, via,  x, y, z);
-        int end = out.writerIndex();
-        return start == end ? null : out.retainedSlice(start, end - start);
-    }
-
-
-    public static void writeParticle(ByteBuf out, ParticleSource particles, ViaHook.ViaMutator via, double x, double y, double z) {
-        particles.newWriter(x, y, z, out, via);
-    }*/
 
     public static void writeVarInt1(ByteBuf buf, int value) {
         buf.writeByte(value);
@@ -67,42 +48,13 @@ public class ByteBufUtil {
         }
     }
 
-    public static int warIntSize(int value) {
+    public static int varInt3Size(int value) {
         if ((value & (0xFFFFFFFF << 7)) == 0) {
             return 1;
         } else if ((value & (0xFFFFFFFF << 14)) == 0) {
             return 2;
         } else {
             return 3;
-        }
-    }
-
-    public static int readVarInt(ByteBuf buf) {
-        int readable = buf.readableBytes();
-        if (readable == 0) {
-            throw new IllegalArgumentException();
-        }
-
-        int k = buf.readByte();
-        if ((k & 0x80) != 128) {
-            return k;
-        }
-        int maxRead = Math.min(5, readable);
-        int i = k & 0x7F;
-        for (int j = 1; j < maxRead; j++) {
-            k = buf.readByte();
-            i |= (k & 0x7F) << j * 7;
-            if ((k & 0x80) != 128) {
-                return i;
-            }
-        }
-        throw new IllegalArgumentException();
-    }
-
-    static {
-        // Без сжатия в prepender size пишем только два байта, и в два байта помещается только 2^14
-        if (COMPRESSION_THRESHOLD > 16384) {
-            throw new IllegalStateException("Bad compression threshold. Should be < 16384.");
         }
     }
 }

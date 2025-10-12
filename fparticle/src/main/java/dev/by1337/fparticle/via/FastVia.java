@@ -122,9 +122,8 @@ public class FastVia {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+            Arrays.fill(uppers, null);
         }
-        System.out.println(Arrays.toString(uppers));
     }
 
     @Nullable

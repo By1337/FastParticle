@@ -14,20 +14,17 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.Closeable;
 
-public class FParticleHooker implements Listener, Closeable {
+public class FParticleManager implements Listener, Closeable {
     private final Plugin plugin;
     private final String handlerName;
 
-    public FParticleHooker(Plugin plugin, String handlerName) {
+    public FParticleManager(Plugin plugin, String handlerName) {
         this.plugin = plugin;
         this.handlerName = handlerName;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         Bukkit.getOnlinePlayers().forEach(this::hook);
     }
 
-    public ParticleEncoder getReceiver(Player player) {
-        return FParticleUtil.getChannel(player).attr(ParticleEncoder.ATTRIBUTE).get();
-    }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {

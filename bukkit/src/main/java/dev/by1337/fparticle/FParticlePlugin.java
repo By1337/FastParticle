@@ -2,9 +2,9 @@ package dev.by1337.fparticle;
 
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
-import dev.by1337.fparticle.netty.FParticleHooker;
+import dev.by1337.fparticle.netty.FParticleManager;
 import dev.by1337.fparticle.particle.ParticleData;
-import dev.by1337.fparticle.particle.ParticleOutputStream;
+import dev.by1337.fparticle.particle.ParticlePacketBuilder;
 import dev.by1337.fparticle.particle.ParticleSource;
 import dev.by1337.fparticle.util.Version;
 import net.kyori.adventure.text.Component;
@@ -24,7 +24,7 @@ import java.util.Random;
 
 
 public class FParticlePlugin extends JavaPlugin implements Listener {
-    private static FParticleHooker flusher;
+    private static FParticleManager flusher;
     private static FParticleUtil.NmsAccessor nms = FParticleUtil.instance = create();
 
     private static final ParticleSource SPHERE = new ParticleSource() {
@@ -36,7 +36,7 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
                 .build();
 
         @Override
-        public void write(ParticleOutputStream writer, double baseX, double baseY, double baseZ) {
+        public void doWrite(ParticlePacketBuilder writer, double baseX, double baseY, double baseZ) {
             final double radius = 5;
             for (int i = 0; i < 256; i++) {
                 double phi = random.nextDouble() * Math.PI * 2;
@@ -67,7 +67,7 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        flusher = new FParticleHooker(this, "fparticle");
+        flusher = new FParticleManager(this, "fparticle");
         Bukkit.getPluginManager().registerEvents(this, this);
     }
 
@@ -112,7 +112,10 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
             @Override
             public void run() {
                 var loc = player.getLocation();
-                FParticle.send(player, data, loc.getX(), loc.getY(), loc.getZ());
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                    FParticle.send(onlinePlayer, data, loc.getX(), loc.getY(), loc.getZ());
+                }
+
             }
         }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
         return true;
