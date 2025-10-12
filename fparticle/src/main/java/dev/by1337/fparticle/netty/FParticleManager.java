@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.Plugin;
 
 import java.io.Closeable;
+import java.net.URLClassLoader;
 
 public class FParticleManager implements Listener, Closeable {
     private final Plugin plugin;

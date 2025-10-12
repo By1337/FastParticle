@@ -25,7 +25,6 @@ import java.util.Random;
 
 public class FParticlePlugin extends JavaPlugin implements Listener {
     private static FParticleManager flusher;
-    private static FParticleUtil.NmsAccessor nms = FParticleUtil.instance = create();
 
     private static final ParticleSource SPHERE = new ParticleSource() {
         private final Random random = new Random();
@@ -103,7 +102,6 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
         }
     }
 
-
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         Player player = (Player) sender;
@@ -119,13 +117,5 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
             }
         }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
         return true;
-    }
-
-
-    private static FParticleUtil.NmsAccessor create() {
-        return switch (Version.VERSION.ver()) {
-            case "1.16.5" -> new NMSUtilV1165();
-            default -> throw new IllegalStateException("Unknown NMS Version");
-        };
     }
 }

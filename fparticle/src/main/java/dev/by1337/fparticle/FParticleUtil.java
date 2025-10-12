@@ -1,15 +1,24 @@
 package dev.by1337.fparticle;
 
+import dev.by1337.fparticle.netty.NMSLoader;
 import dev.by1337.fparticle.particle.ParticleData;
 import dev.by1337.fparticle.particle.ParticlePacketBuilder;
 import io.netty.channel.Channel;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URLClassLoader;
+
 public final class FParticleUtil {
     static NmsAccessor instance;
+
+    @ApiStatus.Internal
+    public static void setInstance(NmsAccessor instance) {
+        FParticleUtil.instance = instance;
+    }
 
     public static Channel getChannel(Player player) {
         return instance.getChannel(player);
@@ -38,6 +47,14 @@ public final class FParticleUtil {
 
     public static int getParticleId(Particle particle, @Nullable Object data) {
         return instance.getParticleId(particle, data);
+    }
+
+    static {
+        if (FParticleUtil.class.getClassLoader() instanceof URLClassLoader urlClassLoader) {
+            NMSLoader.load(urlClassLoader);
+        } else {
+            throw new IllegalStateException("nms is not loaded");
+        }
     }
 
     public interface NmsAccessor {

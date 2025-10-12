@@ -114,11 +114,6 @@
             <version>1.1</version>
         </dependency>
         <dependency>
-            <groupId>dev.by1337.fparticle</groupId>
-            <artifactId>v1_16_5</artifactId>
-            <version>1.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <version>18.0.0</version>
