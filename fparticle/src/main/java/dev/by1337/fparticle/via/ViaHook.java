@@ -2,6 +2,7 @@ package dev.by1337.fparticle.via;
 
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.connection.UserConnection;
+import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.exception.CancelEncoderException;
 import dev.by1337.fparticle.util.Version;
 import io.netty.buffer.ByteBuf;
@@ -10,6 +11,14 @@ import org.bukkit.entity.Player;
 
 import java.util.function.Consumer;
 
+/**
+ * A utility class that interacts with the ViaVersion API to manage protocol transformations
+ * for players on specific channels.
+ * <p>
+ * This class determines if the ViaVersion library is available and provides functionality
+ * to mutate network packets based on protocol versions. If the library is unavailable, it
+ * defaults to native behavior without packet transformations.
+ */
 public class ViaHook {
     private static final boolean HAS_VIA;
 

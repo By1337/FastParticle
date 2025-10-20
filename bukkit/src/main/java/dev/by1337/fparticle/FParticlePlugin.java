@@ -1,37 +1,38 @@
 package dev.by1337.fparticle;
 
-import com.destroystokyo.paper.event.server.ServerTickEndEvent;
-import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import dev.by1337.fparticle.netty.FParticleManager;
 import dev.by1337.fparticle.particle.ParticleData;
 import dev.by1337.fparticle.particle.ParticlePacketBuilder;
 import dev.by1337.fparticle.particle.ParticleSource;
-import dev.by1337.fparticle.util.Version;
-import net.kyori.adventure.text.Component;
+import dev.by1337.fparticle.particle.options.BlockParticleOption;
+import dev.by1337.fparticle.particle.options.DustParticleOptions;
+import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Particle;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 
-public class FParticlePlugin extends JavaPlugin implements Listener {
+public class FParticlePlugin extends JavaPlugin {
     private static FParticleManager flusher;
 
     private static final ParticleSource SPHERE = new ParticleSource() {
         private final Random random = new Random();
         private final ParticleData particle = ParticleData.builder()
                 .maxSpeed(0.2f)
-                .data(new Particle.DustOptions(Color.AQUA, 1f))
-                .particle(Particle.REDSTONE)
+                .data(new DustParticleOptions(Color.AQUA.asRGB(), 1.f))
+                .particle(ParticleType.DUST)
                 .build();
 
         @Override
@@ -67,7 +68,6 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         flusher = new FParticleManager(this, "fparticle");
-        Bukkit.getPluginManager().registerEvents(this, this);
     }
 
     @Override
@@ -76,46 +76,67 @@ public class FParticlePlugin extends JavaPlugin implements Listener {
         flusher = null;
     }
 
-    private long prevUsed;
-    private int tick;
-    private long allocPerSec;
 
-    @EventHandler
-    public void tickStart(ServerTickStartEvent e) {
-        prevUsed = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-    }
+    // @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        Player player = (Player) sender;
+        if (args.length == 0) {
+            new BukkitRunnable() {
+                final ParticleSource data = SPHERE.and(SPHERE.shift(0, 10, 0));
 
-    @EventHandler
-    public void tickEnd(ServerTickEndEvent e) {
-        long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long alloc = used - prevUsed;
-        if (alloc > 0) allocPerSec += alloc;
-        prevUsed = used;
+                @Override
+                public void run() {
+                    var loc = player.getLocation();
+                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                        FParticle.send(onlinePlayer, SPHERE, loc.getX(), loc.getY(), loc.getZ());
+                    }
 
-        if (++tick >= 20) {
-            double mb = allocPerSec / 1024.0 / 1024.0;
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.sendMessage(Component.text(String.format("§e%.3f MB/sec allocated", mb)));
+                }
+            }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
+        } else {
+            try {
+                ParticleType type = ParticleType.byId("minecraft:" + args[0]);
+                var loc = player.getLocation();
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        Channel c = FParticleUtil.getChannel(player);
+                        var b = ParticleData.builder().yDist(1);
+                        if (args.length == 2) {
+                            BlockType blockType = BlockType.getById("minecraft:" + args[1]);
+                            if (blockType != null){
+                                b.data(new BlockParticleOption(blockType));
+                            }
+                        }
+                        try {
+                            c.writeAndFlush(b.particle(type).build().writerAt(loc.getX(), loc.getY(), loc.getZ()))
+                                    .sync();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }.runTaskAsynchronously(this);
+            } catch (IllegalArgumentException e) {
+                sender.sendMessage("Invalid particle type!");
             }
-            tick = 0;
-            allocPerSec = 0;
         }
+
+        return true;
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        Player player = (Player) sender;
-        new BukkitRunnable() {
-            final ParticleSource data = SPHERE.and(SPHERE.shift(0, 10, 0));
-            @Override
-            public void run() {
-                var loc = player.getLocation();
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    FParticle.send(onlinePlayer, data, loc.getX(), loc.getY(), loc.getZ());
-                }
-
-            }
-        }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
-        return true;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        if (args.length == 1) {
+            return Stream.of(ParticleType.values())
+                    .map(p -> p.getKey().getKey())
+                    .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
+                    .toList();
+        }else if(args.length == 2){
+            return Stream.of(BlockType.values())
+                    .map(p -> p.getKey().getKey())
+                    .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .toList();
+        }
+        return List.of();
     }
 }

@@ -1,9 +1,9 @@
 package dev.by1337.fparticle.particle;
 
-import com.viaversion.viaversion.exception.InformativeException;
 import dev.by1337.fparticle.FParticleUtil;
 import dev.by1337.fparticle.netty.buffer.ByteBufUtil;
-import dev.by1337.fparticle.via.FastVia;
+import dev.by1337.fparticle.via.ParticleWriter;
+import dev.by1337.fparticle.via.Mappings;
 import dev.by1337.fparticle.via.ViaHook;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
  * @see dev.by1337.fparticle.netty.handler.ParticleEncoder
  */
 public abstract class ParticlePacketBuilder {
-    private static final int PACKET_ID = FParticleUtil.getLevelParticlesPacketId();
     private static final Logger log = LoggerFactory.getLogger("FParticle");
 
     private ByteBuf out;
@@ -74,9 +73,9 @@ public abstract class ParticlePacketBuilder {
      * }</pre>
      *
      * @param particle the particle source pattern to write
-     * @param x the X coordinate for the pattern
-     * @param y the Y coordinate for the pattern
-     * @param z the Z coordinate for the pattern
+     * @param x        the X coordinate for the pattern
+     * @param y        the Y coordinate for the pattern
+     * @param z        the Z coordinate for the pattern
      */
     public final void write(ParticleSource particle, double x, double y, double z) {
         particle.doWrite(this, x, y, z);
@@ -103,9 +102,9 @@ public abstract class ParticlePacketBuilder {
      * }</pre>
      *
      * @param particle the particle data to write
-     * @param x the X world coordinate
-     * @param y the Y world coordinate
-     * @param z the Z world coordinate
+     * @param x        the X world coordinate
+     * @param y        the Y world coordinate
+     * @param z        the Z world coordinate
      */
     public final void write(ParticleData particle, double x, double y, double z) {
         write(particle, x, y, z, particle.xDist, particle.yDist, particle.zDist);
@@ -116,39 +115,44 @@ public abstract class ParticlePacketBuilder {
     // packet id varInt
     // packet payload
     public final void write(ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
-        int prependerStartIdx = out.writerIndex();
+        final int prependerStartIdx = out.writerIndex();
         // пишем prepender size в два байта, максимум 2^14,
         // этого достаточно так как если размер будет больше чем COMPRESSION_THRESHOLD это значение перезапишется после сжатия
         ByteBufUtil.writeVarInt2(out, 0);
 
-        int compressStartIdx = prependerStartIdx + 2;
+        final int compressStartIdx = prependerStartIdx + 2;
         // compress size всегда 0 если размер меньше COMPRESSION_THRESHOLD, если больше то при сжатии это значение перезапишется
         ByteBufUtil.writeVarInt1(out, 0);
 
-        int payloadStart = compressStartIdx + 1;
+        final int payloadStart = compressStartIdx + 1;
 
-        if (!via.shouldTransformPacket()) {
-            //System.out.println("write NATIVE");
-            writeParticleId();
-            particle.write(out, x, y, z, xDist, yDist, zDist);
-        } else if (!FastVia.write(via.protocol(), out, particle, x, y, z, xDist, yDist, zDist)) {
-          //  System.out.println("write NATIVE+ViaVersion");
-            writeParticleId();
-            particle.write(out, x, y, z, xDist, yDist, zDist);
-            try {
-                // без slice via не умеет
-                var slice = out.slice(payloadStart, out.writerIndex() - payloadStart);
-                via.mutator().accept(slice);
-                out.writerIndex(payloadStart + slice.writerIndex());
-            } catch (InformativeException e) {
-                log.error("Failed to adapt packet via ViaVersion!", e);
+        final int version = via.protocol();
+        int writeLike = ParticleWriter.write(version, out, particle, x, y, z, xDist, yDist, zDist);
+        if (writeLike == -1) {
+            out.writerIndex(prependerStartIdx);
+            return;
+        }
+        if (writeLike != version) {
+            if (writeLike == Mappings.NATIVE_PROTOCOL) {
+                try {
+                    // без slice via не умеет
+                    out.ensureWritable(256);
+                    int widx = out.writerIndex() - payloadStart;
+                    var slice = out.slice(payloadStart, widx + 256);
+                    slice.writerIndex(widx);
+                    via.mutator().accept(slice);
+                    out.writerIndex(payloadStart + slice.writerIndex());
+                } catch (Exception e) {
+                    log.error("Failed to adapt packet via ViaVersion!", e);
+                    out.writerIndex(prependerStartIdx);
+                    return;
+                }
+            } else {
+                log.error("Записал как {} хотя ожидалось {} или {}", writeLike, version, Mappings.NATIVE_PROTOCOL);
                 out.writerIndex(prependerStartIdx);
                 return;
             }
-        }else {
-           // System.out.println("write FastVia");
         }
-
         // Вообще надо бы сжать пакет, но пакет вряд ли будет размером больше чем 256 байт
         // Только партикл с ItemStack может превысить, но клиент всё равно примет пакет даже если он не был сжат.
         // Если решится на сжатие, то сюда надо прокинуть Deflater, который можно создать в ParticleEncoder.
@@ -165,13 +169,4 @@ public abstract class ParticlePacketBuilder {
         }
         ByteBufUtil.setVarInt2(out, prependerStartIdx, prependerSize);
     }
-
-    private void writeParticleId() {
-        if ((PACKET_ID & (0xFFFFFFFF << 7)) == 0) {
-            ByteBufUtil.writeVarInt1(out, PACKET_ID);
-        } else if ((PACKET_ID & (0xFFFFFFFF << 14)) == 0) {
-            ByteBufUtil.writeVarInt2(out, PACKET_ID);
-        }
-    }
-
 }

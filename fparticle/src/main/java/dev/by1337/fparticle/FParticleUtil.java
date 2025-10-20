@@ -1,39 +1,30 @@
 package dev.by1337.fparticle;
 
-import dev.by1337.fparticle.netty.NMSLoader;
 import dev.by1337.fparticle.particle.ParticleData;
 import dev.by1337.fparticle.particle.ParticlePacketBuilder;
+import dev.by1337.fparticle.util.NMSLoader;
 import io.netty.channel.Channel;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URLClassLoader;
-
+/**
+ * Utility class for handling particle-related operations in conjunction with NMS (Net Minecraft Server) functionalities.
+ * This class provides methods for creating, manipulating, and sending particle packets to players,
+ * while abstracting away the NMS implementation details.
+ *
+ * <p>All methods in this class delegate the underlying functionality to the internally managed {@link NmsAccessor} instance,
+ * which adapts to the specific NMS version in use.</p>
+ *
+ * This class is not designed to be instantiated and serves solely static purposes.
+ */
+@Deprecated // todo no nms
 public final class FParticleUtil {
-    static NmsAccessor instance;
-
-    @ApiStatus.Internal
-    public static void setInstance(NmsAccessor instance) {
-        FParticleUtil.instance = instance;
-    }
+    static final NmsAccessor instance;
 
     public static Channel getChannel(Player player) {
         return instance.getChannel(player);
-    }
-
-    public static int getLevelParticlesPacketId() {
-        return instance.getLevelParticlesPacketId();
-    }
-
-    public static int getCompressionThreshold() {
-        return instance.getCompressionThreshold();
-    }
-
-    public static ParticleData newParticle(ParticleData.Builder builder) {
-        return instance.newParticle(builder);
     }
 
     public static void send(Player player, ParticlePacketBuilder writer) {
@@ -41,20 +32,8 @@ public final class FParticleUtil {
         if (v != null) v.write(writer);
     }
 
-    public static boolean isPlayState(Player player) {
-        return instance.isPlayState(player);
-    }
-
-    public static int getParticleId(Particle particle, @Nullable Object data) {
-        return instance.getParticleId(particle, data);
-    }
-
     static {
-        if (FParticleUtil.class.getClassLoader() instanceof URLClassLoader urlClassLoader) {
-            NMSLoader.load(urlClassLoader);
-        } else {
-            throw new IllegalStateException("nms is not loaded");
-        }
+        instance = NMSLoader.load();
     }
 
     public interface NmsAccessor {
@@ -65,7 +44,9 @@ public final class FParticleUtil {
         @Contract("null -> null")
         @Nullable Channel getChannel(@Nullable Player player);
 
-        int getLevelParticlesPacketId();
+        default int getLevelParticlesPacketId() {
+            return -1;
+        }
 
         int getCompressionThreshold();
 

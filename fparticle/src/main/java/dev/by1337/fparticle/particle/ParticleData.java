@@ -1,11 +1,13 @@
 package dev.by1337.fparticle.particle;
 
 import dev.by1337.fparticle.FParticleUtil;
+import dev.by1337.fparticle.ParticleType;
+import dev.by1337.fparticle.via.Mappings;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Particle;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class ParticleData {
+public class ParticleData extends ParticleSource{
     public final float xDist;
     public final float yDist;
     public final float zDist;
@@ -14,8 +16,8 @@ public abstract class ParticleData {
     public final boolean overrideLimiter;
     /// 1.21.4+
     public final boolean alwaysShow;
-    public final Particle particle;
-    public final @Nullable Object data;
+    public final ParticleType particle;
+    public final @Nullable ParticleOption data;
 
     protected ParticleData(Builder builder) {
         this.xDist = builder.xDist;
@@ -37,13 +39,21 @@ public abstract class ParticleData {
         return new ParticleData.Builder();
     }
 
-    public abstract int particleId();
+  //  public int particleId(){
+  //      return Mappings.getParticleId()
+  //  }
 
     protected static ParticleData build(ParticleData.Builder builder) {
-        return FParticleUtil.newParticle(builder);
+        return new ParticleData(builder);
+      //  return FParticleUtil.newParticle(builder);
     }
 
-    public abstract void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist);
+  //  public abstract void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist);
+
+    @Override
+    public void doWrite(ParticlePacketBuilder writer, double baseX, double baseY, double baseZ) {
+        writer.write(this,  baseX, baseY, baseZ);
+    }
 
     public float xDist() {
         return xDist;
@@ -73,11 +83,11 @@ public abstract class ParticleData {
         return alwaysShow;
     }
 
-    public Particle particle() {
+    public ParticleType particle() {
         return particle;
     }
 
-    public @Nullable Object data() {
+    public @Nullable ParticleOption data() {
         return data;
     }
 
@@ -90,8 +100,8 @@ public abstract class ParticleData {
         public int count;
         public boolean overrideLimiter;
         public boolean alwaysShow;
-        public Particle particle;
-        public Object data;
+        public ParticleType particle;
+        public ParticleOption data;
 
         public Builder() {
         }
@@ -108,17 +118,6 @@ public abstract class ParticleData {
             data = particleData.data;
         }
 
-        Builder(float xDist, float yDist, float zDist, float maxSpeed, int count, boolean overrideLimiter, boolean alwaysShow, Particle particle, Object data) {
-            this.xDist = xDist;
-            this.yDist = yDist;
-            this.zDist = zDist;
-            this.maxSpeed = maxSpeed;
-            this.count = count;
-            this.overrideLimiter = overrideLimiter;
-            this.alwaysShow = alwaysShow;
-            this.particle = particle;
-            this.data = data;
-        }
 
         public Builder xDist(float xDist) {
             this.xDist = xDist;
@@ -155,12 +154,12 @@ public abstract class ParticleData {
             return Builder.this;
         }
 
-        public Builder particle(Particle particle) {
+        public Builder particle(ParticleType particle) {
             this.particle = particle;
             return Builder.this;
         }
 
-        public Builder data(Object data) {
+        public Builder data(ParticleOption data) {
             this.data = data;
             return Builder.this;
         }

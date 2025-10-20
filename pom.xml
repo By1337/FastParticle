@@ -3,12 +3,24 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.by1337.fparticle</groupId>
   <artifactId>FastParticle-parent</artifactId>
-  <version>1.1</version>
+  <version>1.3</version>
   <packaging>pom</packaging>
   <name>FastParticle-parent</name>
     <modules>
         <module>bukkit</module>
         <module>fparticle</module>
-        <module>v1_16_5</module>
+        <module>nms</module>
     </modules>
+    <distributionManagement>
+        <repository>
+            <id>by1337.repo.2</id>
+            <name>releases</name>
+            <url>https://repo.by1337.space/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>by1337.repo.2</id>
+            <name>snapshots</name>
+            <url>https://repo.by1337.space/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

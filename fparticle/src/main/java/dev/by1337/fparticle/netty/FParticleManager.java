@@ -13,19 +13,15 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.Plugin;
 
 import java.io.Closeable;
-import java.net.URLClassLoader;
 
 public class FParticleManager implements Listener, Closeable {
-    private final Plugin plugin;
     private final String handlerName;
 
     public FParticleManager(Plugin plugin, String handlerName) {
-        this.plugin = plugin;
         this.handlerName = handlerName;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         Bukkit.getOnlinePlayers().forEach(this::hook);
     }
-
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
