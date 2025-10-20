@@ -1,11 +1,9 @@
 package dev.by1337.fparticle.particle;
 
-import dev.by1337.fparticle.FParticleUtil;
 import dev.by1337.fparticle.ParticleType;
-import dev.by1337.fparticle.via.Mappings;
-import io.netty.buffer.ByteBuf;
-import org.bukkit.Particle;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 public class ParticleData extends ParticleSource{
     public final float xDist;
@@ -35,6 +33,14 @@ public class ParticleData extends ParticleSource{
         return new Builder(this);
     }
 
+    public static ParticleData of(ParticleType particle) {
+        return of(particle , null);
+    }
+
+    public static ParticleData of(ParticleType particle, ParticleOption data) {
+        return builder().particle(particle).data(data).build();
+    }
+
     public static ParticleData.Builder builder() {
         return new ParticleData.Builder();
     }
@@ -51,8 +57,8 @@ public class ParticleData extends ParticleSource{
   //  public abstract void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist);
 
     @Override
-    public void doWrite(ParticlePacketBuilder writer, double baseX, double baseY, double baseZ) {
-        writer.write(this,  baseX, baseY, baseZ);
+    public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
+        writer.append(this,  baseX, baseY, baseZ);
     }
 
     public float xDist() {
@@ -89,6 +95,18 @@ public class ParticleData extends ParticleSource{
 
     public @Nullable ParticleOption data() {
         return data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ParticleData data1 = (ParticleData) o;
+        return Float.compare(xDist, data1.xDist) == 0 && Float.compare(yDist, data1.yDist) == 0 && Float.compare(zDist, data1.zDist) == 0 && Float.compare(maxSpeed, data1.maxSpeed) == 0 && count == data1.count && overrideLimiter == data1.overrideLimiter && alwaysShow == data1.alwaysShow && particle == data1.particle && Objects.equals(data, data1.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(xDist, yDist, zDist, maxSpeed, count, overrideLimiter, alwaysShow, particle, data);
     }
 
     public static class Builder {

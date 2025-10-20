@@ -4,6 +4,8 @@ import dev.by1337.fparticle.particle.ParticleOption;
 import dev.by1337.fparticle.particle.ParticleOptionType;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Objects;
+
 public final class DustColorTransitionOptions implements ParticleOption {
     private final int rgbFrom;
     private final int rgbTo;
@@ -63,6 +65,18 @@ public final class DustColorTransitionOptions implements ParticleOption {
     @Override
     public ParticleOptionType getType() {
         return ParticleOptionType.DUST_COLOR_TRANSITION_OPTIONS;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        DustColorTransitionOptions that = (DustColorTransitionOptions) o;
+        return rgbFrom == that.rgbFrom && rgbTo == that.rgbTo && Float.compare(size, that.size) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rgbFrom, rgbTo, size);
     }
 }
 

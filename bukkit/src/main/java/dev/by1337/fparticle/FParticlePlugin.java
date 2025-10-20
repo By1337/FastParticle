@@ -1,16 +1,16 @@
 package dev.by1337.fparticle;
 
 import dev.by1337.fparticle.netty.FParticleManager;
+import dev.by1337.fparticle.particle.PacketBuilder;
 import dev.by1337.fparticle.particle.ParticleData;
-import dev.by1337.fparticle.particle.ParticlePacketBuilder;
 import dev.by1337.fparticle.particle.ParticleSource;
+import dev.by1337.fparticle.particle.RandomParticleSource;
 import dev.by1337.fparticle.particle.options.BlockParticleOption;
 import dev.by1337.fparticle.particle.options.DustParticleOptions;
+import dev.by1337.fparticle.util.McfunctionReader;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
-import org.bukkit.Particle;
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -19,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -36,7 +37,7 @@ public class FParticlePlugin extends JavaPlugin {
                 .build();
 
         @Override
-        public void doWrite(ParticlePacketBuilder writer, double baseX, double baseY, double baseZ) {
+        public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
             final double radius = 5;
             for (int i = 0; i < 256; i++) {
                 double phi = random.nextDouble() * Math.PI * 2;
@@ -51,7 +52,7 @@ public class FParticlePlugin extends JavaPlugin {
                 float offsetX = (float) (-x / radius);
                 float offsetY = (float) (-y / radius);
                 float offsetZ = (float) (-z / radius);
-                writer.write(particle,
+                writer.append(particle,
                         x + baseX,
                         y + baseY,
                         z + baseZ
@@ -82,13 +83,21 @@ public class FParticlePlugin extends JavaPlugin {
         Player player = (Player) sender;
         if (args.length == 0) {
             new BukkitRunnable() {
-                final ParticleSource data = SPHERE.and(SPHERE.shift(0, 10, 0));
+                final ParticleSource data = McfunctionReader.read(new File(getDataFolder(), "test.mcfunction"));
+                double angleRad = 0;
 
                 @Override
                 public void run() {
                     var loc = player.getLocation();
+                    double x = loc.getX();
+                    double y = loc.getY();
+                    double z = loc.getZ();
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        FParticle.send(onlinePlayer, SPHERE, loc.getX(), loc.getY(), loc.getZ());
+                        FParticle.send(onlinePlayer,
+                                data.rotateY(angleRad++, x, y, z), x, y, z);
+                        if (angleRad == 360) {
+                            angleRad = 0;
+                        }
                     }
 
                 }

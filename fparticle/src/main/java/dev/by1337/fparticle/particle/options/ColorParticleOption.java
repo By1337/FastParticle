@@ -4,6 +4,8 @@ import dev.by1337.fparticle.particle.ParticleOption;
 import dev.by1337.fparticle.particle.ParticleOptionType;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Objects;
+
 public final class ColorParticleOption implements ParticleOption {
 
     private final int argb;
@@ -49,5 +51,17 @@ public final class ColorParticleOption implements ParticleOption {
     @Override
     public ParticleOptionType getType() {
         return ParticleOptionType.COLOR_PARTICLE_OPTION;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ColorParticleOption that = (ColorParticleOption) o;
+        return argb == that.argb;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(argb);
     }
 }
