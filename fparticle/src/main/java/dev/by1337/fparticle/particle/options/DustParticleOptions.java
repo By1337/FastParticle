@@ -4,23 +4,17 @@ import dev.by1337.fparticle.particle.ParticleOption;
 import dev.by1337.fparticle.particle.ParticleOptionType;
 import io.netty.buffer.ByteBuf;
 
-import java.util.Objects;
-
-public final class DustParticleOptions implements ParticleOption {
-    private final int rgb;
-    private final float size;
+public record DustParticleOptions(int rgb, float size) implements ParticleOption {
 
     public DustParticleOptions(float r, float g, float b, float size) {
+        this(toRgb(r, g, b), size);
+    }
+
+    public static int toRgb(float r, float g, float b) {
         int ri = (int) (r * 255) & 0xFF;
         int gi = (int) (g * 255) & 0xFF;
         int bi = (int) (b * 255) & 0xFF;
-        rgb = (ri << 16) | (gi << 8) | bi;
-        this.size = size;
-    }
-
-    public DustParticleOptions(int rgb, float size) {
-        this.rgb = rgb;
-        this.size = size;
+        return (ri << 16) | (gi << 8) | bi;
     }
 
     @Override
@@ -53,8 +47,4 @@ public final class DustParticleOptions implements ParticleOption {
         return rgb == that.rgb && Float.compare(size, that.size) == 0;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(rgb, size);
-    }
 }

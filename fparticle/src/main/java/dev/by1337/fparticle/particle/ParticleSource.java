@@ -1,5 +1,6 @@
 package dev.by1337.fparticle.particle;
 
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Contract;
 
 /**
@@ -39,101 +40,64 @@ import org.jetbrains.annotations.Contract;
  */
 public abstract class ParticleSource {
 
-    /**
-     * Creates a {@link ParticlePacketBuilder} positioned at the specified coordinates.
-     * <p>
-     * This method is primarily used internally by the FParticle API. When the builder
-     * is encoded, it will invoke {@link #doWrite(PacketBuilder, double, double, double)}
-     * with the provided coordinates.
-     *
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @param z the Z coordinate
-     * @return a new ParticlePacketBuilder instance
-     */
-    @Contract(pure = true)
-    public ParticlePacketBuilder writerAt(double x, double y, double z) {
-        return new ParticlePacketBuilder() {
-            @Override
-            protected void onWrite() {
-                doWrite(this, x, y, z);
-            }
-        };
-    }
-
     @Contract(pure = true)
     public PrecomputedParticleSource compute(){
         return new PrecomputedParticleSource(this, null);
     }
+
     @Contract(pure = true)
-    public ParticleSource rotateX(double angleDeg, double cx, double cy, double cz) {
+    public ParticleSource rotateX(double angle, double cx, double cy, double cz) {
         ParticleSource sub = this;
-        double angle = Math.toRadians(angleDeg);
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
 
         return new ParticleSource() {
             @Override
             public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
-                sub.doWrite(new PacketBuilder() {
-                    @Override
-                    public void append(ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
-                        double newX = x;
-                        double newY = cy + (y - cy) * cos - (z - cz) * sin;
-                        double newZ = cz + (y - cy) * sin + (z - cz) * cos;
-                        writer.append(particle, newX, newY, newZ, xDist, yDist, zDist);
-                    }
+                sub.doWrite((particle, x, y, z, xDist, yDist, zDist) -> {
+                    double newY = cy + (y - cy) * cos - (z - cz) * sin;
+                    double newZ = cz + (y - cy) * sin + (z - cz) * cos;
+                    writer.append(particle, x, newY, newZ, xDist, yDist, zDist);
                 }, baseX, baseY, baseZ);
             }
         };
     }
 
     @Contract(pure = true)
-    public ParticleSource rotateY(double angleDeg, double cx, double cy, double cz) {
+    public ParticleSource rotateY(double angle, double cx, double cy, double cz) {
         ParticleSource sub = this;
-        double angle = Math.toRadians(angleDeg);
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
 
         return new ParticleSource() {
             @Override
             public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
-                sub.doWrite(new PacketBuilder() {
-                    @Override
-                    public void append(ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
-                        double newX = cx + (x - cx) * cos + (z - cz) * sin;
-                        double newY = y;
-                        double newZ = cz + -(x - cx) * sin + (z - cz) * cos;
-                        writer.append(particle, newX, newY, newZ, xDist, yDist, zDist);
-                    }
+                sub.doWrite((particle, x, y, z, xDist, yDist, zDist) -> {
+                    double newX = cx + (x - cx) * cos + (z - cz) * sin;
+                    double newZ = cz + -(x - cx) * sin + (z - cz) * cos;
+                    writer.append(particle, newX, y, newZ, xDist, yDist, zDist);
                 }, baseX, baseY, baseZ);
             }
         };
     }
 
     @Contract(pure = true)
-    public ParticleSource rotateZ(double angleDeg, double cx, double cy, double cz) {
+    public ParticleSource rotateZ(double angle, double cx, double cy, double cz) {
         ParticleSource sub = this;
-        double angle = Math.toRadians(angleDeg);
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
 
         return new ParticleSource() {
             @Override
             public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
-                sub.doWrite(new PacketBuilder() {
-                    @Override
-                    public void append(ParticleData particle, double x, double y, double z, float xDist, float yDist, float zDist) {
-                        double newX = cx + (x - cx) * cos - (y - cy) * sin;
-                        double newY = cy + (x - cx) * sin + (y - cy) * cos;
-                        double newZ = z;
-                        writer.append(particle, newX, newY, newZ, xDist, yDist, zDist);
-                    }
+                sub.doWrite((particle, x, y, z, xDist, yDist, zDist) -> {
+                    double newX = cx + (x - cx) * cos - (y - cy) * sin;
+                    double newY = cy + (x - cx) * sin + (y - cy) * cos;
+                    writer.append(particle, newX, newY, z, xDist, yDist, zDist);
                 }, baseX, baseY, baseZ);
             }
         };
     }
-
 
     /**
      * Defines the particle generation pattern for this source.

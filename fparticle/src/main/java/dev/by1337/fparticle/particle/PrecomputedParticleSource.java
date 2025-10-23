@@ -81,4 +81,8 @@ public class PrecomputedParticleSource extends ParticleSource {
         return new PrecomputedParticleSource(positions, particle);
     }
 
+    @Override
+    public PrecomputedParticleSource compute() {
+        return this;
+    }
 }

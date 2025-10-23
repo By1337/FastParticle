@@ -29,7 +29,7 @@ public class ParticleData extends ParticleSource{
         this.data = builder.data;
     }
 
-    public ParticleData.Builder copyAsBuilder() {
+    public ParticleData.Builder copy() {
         return new Builder(this);
     }
 
@@ -44,17 +44,6 @@ public class ParticleData extends ParticleSource{
     public static ParticleData.Builder builder() {
         return new ParticleData.Builder();
     }
-
-  //  public int particleId(){
-  //      return Mappings.getParticleId()
-  //  }
-
-    protected static ParticleData build(ParticleData.Builder builder) {
-        return new ParticleData(builder);
-      //  return FParticleUtil.newParticle(builder);
-    }
-
-  //  public abstract void write(ByteBuf buf, double x, double y, double z, float xDist, float yDist, float zDist);
 
     @Override
     public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
@@ -183,7 +172,7 @@ public class ParticleData extends ParticleSource{
         }
 
         public ParticleData build() {
-            return ParticleData.build(this);
+            return new ParticleData(this);
         }
 
     }

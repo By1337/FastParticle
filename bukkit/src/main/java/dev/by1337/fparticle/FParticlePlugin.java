@@ -4,10 +4,11 @@ import dev.by1337.fparticle.netty.FParticleManager;
 import dev.by1337.fparticle.particle.PacketBuilder;
 import dev.by1337.fparticle.particle.ParticleData;
 import dev.by1337.fparticle.particle.ParticleSource;
-import dev.by1337.fparticle.particle.RandomParticleSource;
 import dev.by1337.fparticle.particle.options.BlockParticleOption;
+import dev.by1337.fparticle.particle.options.DustColorTransitionOptions;
 import dev.by1337.fparticle.particle.options.DustParticleOptions;
-import dev.by1337.fparticle.util.McfunctionReader;
+import dev.by1337.fparticle.util.reflect.ChannelGetterCreator;
+import dev.by1337.fparticle.util.reflect.ChannelGetter;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -19,7 +20,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -83,7 +83,16 @@ public class FParticlePlugin extends JavaPlugin {
         Player player = (Player) sender;
         if (args.length == 0) {
             new BukkitRunnable() {
-                final ParticleSource data = McfunctionReader.read(new File(getDataFolder(), "test.mcfunction"));
+                final ParticleSource data =
+                        SPHERE.compute()
+                                .ofParticle(ParticleData.of(
+                                        ParticleType.DUST_COLOR_TRANSITION,
+                                        new DustColorTransitionOptions(
+                                                0x00FFE0,
+                                                0xEB00FF,
+                                                1f
+                                        )
+                                )); // McfunctionReader.read(new File(getDataFolder(), "test.mcfunction"));
                 double angleRad = 0;
 
                 @Override
@@ -94,7 +103,7 @@ public class FParticlePlugin extends JavaPlugin {
                     double z = loc.getZ();
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                         FParticle.send(onlinePlayer,
-                                data.rotateY(angleRad++, x, y, z), x, y, z);
+                                data.rotateY(Math.toRadians(angleRad++), x, y, z), x, y, z);
                         if (angleRad == 360) {
                             angleRad = 0;
                         }
@@ -109,16 +118,16 @@ public class FParticlePlugin extends JavaPlugin {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        Channel c = FParticleUtil.getChannel(player);
+                        Channel c =  FParticleUtil.getChannel(player);
                         var b = ParticleData.builder().yDist(1);
                         if (args.length == 2) {
                             BlockType blockType = BlockType.getById("minecraft:" + args[1]);
-                            if (blockType != null){
+                            if (blockType != null) {
                                 b.data(new BlockParticleOption(blockType));
                             }
                         }
                         try {
-                            c.writeAndFlush(b.particle(type).build().writerAt(loc.getX(), loc.getY(), loc.getZ()))
+                            c.writeAndFlush(b.particle(type).build().shift(loc.getX(), loc.getY(), loc.getZ()))
                                     .sync();
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
@@ -140,7 +149,7 @@ public class FParticlePlugin extends JavaPlugin {
                     .map(p -> p.getKey().getKey())
                     .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
                     .toList();
-        }else if(args.length == 2){
+        } else if (args.length == 2) {
             return Stream.of(BlockType.values())
                     .map(p -> p.getKey().getKey())
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))

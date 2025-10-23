@@ -6,18 +6,11 @@ import dev.by1337.fparticle.particle.ParticleOption;
 import dev.by1337.fparticle.particle.ParticleOptionType;
 import io.netty.buffer.ByteBuf;
 
-import java.util.Objects;
-
-public final class BlockParticleOption implements ParticleOption {
-    private final BlockType blocks;
-
-    public BlockParticleOption(BlockType blocks) {
-        this.blocks = blocks;
-    }
+public record BlockParticleOption(BlockType block) implements ParticleOption {
 
     @Override
     public void write(ByteBuf out, int version) {
-        ByteBufUtil.writeVarInt(out, blocks.getProtocolId(version));
+        ByteBufUtil.writeVarInt(out, block.getProtocolId(version));
     }
 
     @Override
@@ -34,11 +27,7 @@ public final class BlockParticleOption implements ParticleOption {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         BlockParticleOption that = (BlockParticleOption) o;
-        return blocks == that.blocks;
+        return block == that.block;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(blocks);
-    }
 }

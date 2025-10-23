@@ -5,21 +5,10 @@ import dev.by1337.fparticle.particle.ParticleOption;
 import dev.by1337.fparticle.particle.ParticleOptionType;
 import io.netty.buffer.ByteBuf;
 
-public final class TrailParticleOption implements ParticleOption {
-    private final double x;
-    private final double y;
-    private final double z;
-    private final int color;
-    //since 769(1.21.4)
-    private final int duration;
-
-    public TrailParticleOption(double x, double y, double z, int color, int duration) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.color = color;
-        this.duration = duration;
-    }
+/**
+ * @param duration since 769(1.21.4)
+ */
+public record TrailParticleOption(double x, double y, double z, int color, int duration) implements ParticleOption {
 
     @Override
     public void write(ByteBuf out, int version) {
@@ -32,10 +21,12 @@ public final class TrailParticleOption implements ParticleOption {
             ByteBufUtil.writeVarInt(out, duration);
         }
     }
+
     @Override
     public boolean writable(int version) {
         return version >= 768;
     }
+
     @Override
     public ParticleOptionType getType() {
         return ParticleOptionType.TRAIL_PARTICLE_OPTION;
