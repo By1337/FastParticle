@@ -103,7 +103,7 @@ public class ChannelGetterCreator {
                         }
                     }
                 }
-            } catch (InaccessibleObjectException e) {
+            } catch (InaccessibleObjectException ignored) {
             }
         }
         stack.pop();
@@ -160,14 +160,14 @@ public class ChannelGetterCreator {
      * The BytecodeGenerator class is a utility that programmatically generates bytecode to create an implementation
      * of the ChannelGetter interface. It dynamically constructs a class that defines a method for retrieving
      * the Netty Channel from a Bukkit Player object by navigating through specified field paths.
-     *
+     * <p>
      * This class uses the ASM library for bytecode manipulation and generation.
-     *
+     * <p>
      * Functionality:
      * - Creates a dynamically generated class implementing the ChannelGetter interface.
      * - Defines the getChannel(Player pl) method to extract the Netty Channel object from the provided player instance.
      * - Works with the Java 8 class version and ensures proper initialization of the generated class.
-     *
+     * <p>
      * Usage Notes:
      * - This class is intended for internal use and is not expected to be used directly by external consumers.
      * - The generated class is isolated as a hidden class to avoid polluting the runtime namespace.
@@ -180,7 +180,7 @@ public class ChannelGetterCreator {
             n.version = Opcodes.V1_8;
             n.superName = "java/lang/Object";
             n.access = Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL;
-            n.interfaces.add(ChannelGetter.class.getName().replace(".", "/"));
+            n.interfaces.add(Type.getInternalName(ChannelGetter.class));
             {
                 MethodNode methodNode = new MethodNode(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
                 methodNode.visitCode();

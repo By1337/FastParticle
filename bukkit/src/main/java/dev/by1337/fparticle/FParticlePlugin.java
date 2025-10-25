@@ -7,8 +7,8 @@ import dev.by1337.fparticle.particle.ParticleSource;
 import dev.by1337.fparticle.particle.options.BlockParticleOption;
 import dev.by1337.fparticle.particle.options.DustColorTransitionOptions;
 import dev.by1337.fparticle.particle.options.DustParticleOptions;
-import dev.by1337.fparticle.util.reflect.ChannelGetterCreator;
-import dev.by1337.fparticle.util.reflect.ChannelGetter;
+import dev.by1337.fparticle.particle.options.ItemParticleOption;
+import dev.by1337.fparticle.via.Mappings;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -60,10 +60,32 @@ public class FParticlePlugin extends JavaPlugin {
             }
         }
     };
+    private static final ParticleSource TEST = new ParticleSource() {
+        private final Random random = new Random();
+        private final ParticleData particle = ParticleData.builder()
+                .maxSpeed(0f)
+                .particle(ParticleType.FIREWORK)
+                .count(50)
+                .build();
+
+        @Override
+        public void doWrite(PacketBuilder writer, double baseX, double baseY, double baseZ) {
+            writer.append(
+                    particle,
+                    baseX,
+                    baseY,
+                    baseZ,
+                    10,
+                    10,
+                    10
+            );
+        }
+    };
 
 
     @Override
     public void onLoad() {
+        int ignored = ItemType.BARRIER.getProtocolId(Mappings.NATIVE_PROTOCOL); //preload
     }
 
     @Override
@@ -86,11 +108,9 @@ public class FParticlePlugin extends JavaPlugin {
                 final ParticleSource data =
                         SPHERE.compute()
                                 .ofParticle(ParticleData.of(
-                                        ParticleType.DUST_COLOR_TRANSITION,
-                                        new DustColorTransitionOptions(
-                                                0x00FFE0,
-                                                0xEB00FF,
-                                                1f
+                                        ParticleType.ITEM,
+                                        new ItemParticleOption(
+                                                ItemType.ENDER_PEARL
                                         )
                                 )); // McfunctionReader.read(new File(getDataFolder(), "test.mcfunction"));
                 double angleRad = 0;
@@ -101,14 +121,7 @@ public class FParticlePlugin extends JavaPlugin {
                     double x = loc.getX();
                     double y = loc.getY();
                     double z = loc.getZ();
-                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        FParticle.send(onlinePlayer,
-                                data.rotateY(Math.toRadians(angleRad++), x, y, z), x, y, z);
-                        if (angleRad == 360) {
-                            angleRad = 0;
-                        }
-                    }
-
+                    Bukkit.getOnlinePlayers().forEach(FParticle.send(data, x, y, z));
                 }
             }.runTaskTimerAsynchronously(FParticlePlugin.this, 0, 1);
         } else {
@@ -118,9 +131,14 @@ public class FParticlePlugin extends JavaPlugin {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        Channel c =  FParticleUtil.getChannel(player);
+                        Channel c = FParticleUtil.getChannel(player);
                         var b = ParticleData.builder().yDist(1);
-                        if (args.length == 2) {
+                        if (args.length == 2 && type == ParticleType.ITEM) {
+                            ItemType itemType = ItemType.getById("minecraft:" + args[1]);
+                            if (itemType != null) {
+                                b.data(new ItemParticleOption(itemType));
+                            }
+                        } else if (args.length == 2) {
                             BlockType blockType = BlockType.getById("minecraft:" + args[1]);
                             if (blockType != null) {
                                 b.data(new BlockParticleOption(blockType));
@@ -148,6 +166,11 @@ public class FParticlePlugin extends JavaPlugin {
             return Stream.of(ParticleType.values())
                     .map(p -> p.getKey().getKey())
                     .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
+                    .toList();
+        } else if (args.length == 2 && args[0].contains("item")) {
+            return Stream.of(ItemType.values())
+                    .map(p -> p.getKey().getKey())
+                    .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .toList();
         } else if (args.length == 2) {
             return Stream.of(BlockType.values())

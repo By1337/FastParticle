@@ -53,7 +53,7 @@ public enum ParticleType implements Keyed {
     // 754(1.16.5)+: ~
     LANDING_OBSIDIAN_TEAR("minecraft:landing_obsidian_tear"),
     // 754(1.16.5)+: ItemParticleOption
-    //   ITEM("minecraft:item"), //todo
+    ITEM("minecraft:item"),
     // 754(1.16.5)+: ~
     BUBBLE("minecraft:bubble"),
     // 754(1.16.5)+: ~

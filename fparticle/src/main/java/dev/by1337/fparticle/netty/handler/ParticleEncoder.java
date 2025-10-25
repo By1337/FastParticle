@@ -22,15 +22,23 @@ public final class ParticleEncoder extends MessageToByteEncoder<ParticleSource> 
     private static final Logger log = LoggerFactory.getLogger("ParticleEncoder");
 
     private final ViaHook.ViaMutator via;
+    private final int protocolVersion;
     private ByteBuf out;
+    private boolean ready = false;
+    private final long createHookTime;
 
     public ParticleEncoder(Channel channel, Player player) {
         via = ViaHook.getViaMutator(player, channel);
+        protocolVersion = via.protocol();
+        createHookTime = System.nanoTime();
     }
     private final long SEC = TimeUnit.SECONDS.toNanos(1);
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ParticleSource writer, ByteBuf byteBuf) throws Exception {
+      //  if (!ready) {
+      //      if (!(ready = (System.nanoTime() - createHookTime) >= SEC * 2)) return;
+      //  }
         long l = System.nanoTime();
         this.out = byteBuf;
         try {
@@ -42,7 +50,7 @@ public final class ParticleEncoder extends MessageToByteEncoder<ParticleSource> 
         if (written != 0) {
             long time = System.nanoTime() - l;
             long l1 = written * (SEC / time);
-            log.info("Sent {} bytes... {}us {} MB/sec", byteBuf.readableBytes(), (time / 1000D), l1 / 1_000_000D);
+            log.info("Sent {} bytes... {}µs {} MB/sec", byteBuf.readableBytes(), (time / 1000D), l1 / 1_000_000D);
         }
     }
 
@@ -63,13 +71,12 @@ public final class ParticleEncoder extends MessageToByteEncoder<ParticleSource> 
 
         final int payloadStart = compressStartIdx + 1;
 
-        final int version = via.protocol();
-        int writeLike = ParticleWriter.write(version, out, particle, x, y, z, xDist, yDist, zDist);
+        int writeLike = ParticleWriter.write(protocolVersion, out, particle, x, y, z, xDist, yDist, zDist);
         if (writeLike == -1) {
             out.writerIndex(prependerStartIdx);
             return;
         }
-        if (writeLike != version) {
+        if (writeLike != protocolVersion) {
             if (writeLike == Mappings.NATIVE_PROTOCOL) {
                 try {
                     // без slice via не умеет
@@ -85,7 +92,7 @@ public final class ParticleEncoder extends MessageToByteEncoder<ParticleSource> 
                     return;
                 }
             } else {
-                log.error("Записал как {} хотя ожидалось {} или {}", writeLike, version, Mappings.NATIVE_PROTOCOL);
+                log.error("Записал как {} хотя ожидалось {} или {}", writeLike, protocolVersion, Mappings.NATIVE_PROTOCOL);
                 out.writerIndex(prependerStartIdx);
                 return;
             }
@@ -105,5 +112,10 @@ public final class ParticleEncoder extends MessageToByteEncoder<ParticleSource> 
             return;
         }
         ByteBufUtil.setVarInt2(out, prependerStartIdx, prependerSize);
+    }
+
+    @Override
+    public boolean acceptOutboundMessage(Object msg) {
+        return msg instanceof ParticleSource;
     }
 }

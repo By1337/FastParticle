@@ -1,6 +1,7 @@
 package dev.by1337.fparticle.particle;
 
 import dev.by1337.fparticle.BlockType;
+import dev.by1337.fparticle.ItemType;
 import dev.by1337.fparticle.particle.options.*;
 
 import java.util.HashMap;
@@ -14,7 +15,7 @@ public enum ParticleOptionType {
     TRAIL_PARTICLE_OPTION(new TrailParticleOption(0, 0, 0, 0xFFFFFF, 50), "TrailParticleOption", "TargetColorParticleOption"),
     SHRIEK_PARTICLE_OPTION(new ShriekParticleOption(50), "ShriekParticleOption"),
     DUST_PARTICLE_OPTIONS(new DustParticleOptions(0xFFFFFF, 1.f), "DustParticleOptions"),
-   // ITEM_PARTICLE_OPTION(null, "ItemParticleOption"),
+    ITEM_PARTICLE_OPTION(new ItemParticleOption(ItemType.BARRIER), "ItemParticleOption"),
     SCULK_CHARGE_PARTICLE_OPTIONS(new SculkChargeParticleOptions(10), "SculkChargeParticleOptions"),
     SPELL_PARTICLE_OPTION(new SpellParticleOption(0xAAFFFFFF, 2.f), "SpellParticleOption"),
     COLOR_PARTICLE_OPTION(new ColorParticleOption(0xAAFFFFFF), "ColorParticleOption"),

@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import dev.by1337.fparticle.BlockType;
+import dev.by1337.fparticle.ItemType;
 import dev.by1337.fparticle.ParticleType;
 import dev.by1337.fparticle.particle.ParticleOptionType;
 import dev.by1337.fparticle.util.Version;
@@ -18,6 +19,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +44,7 @@ public class Mappings {
     private static final int[] BLOCKS;
     private static final int[] PARTICLES;
     private static final int[] PACKETS;
+    private static final int[] ITEMS;
     private static final Logger log = LoggerFactory.getLogger(Mappings.class);
 
     /**
@@ -55,10 +58,17 @@ public class Mappings {
     public static int getBlockId(BlockType b, int protocol) {
         int versionIndex = protocol - MIN_VERSION;
         if (versionIndex < 0 || versionIndex >= VERSION_COUNT) {
-            throw new IllegalArgumentException("Unsupported protocol version: " + protocol);
+            return 0;
         }
-        int index = b.ordinal() * VERSION_COUNT + versionIndex;
-        return BLOCKS[index];
+        return BLOCKS[b.ordinal() * VERSION_COUNT + versionIndex];
+    }
+
+    public static int getItemId(ItemType t, int protocol) {
+        int versionIndex = protocol - MIN_VERSION;
+        if (versionIndex < 0 || versionIndex >= VERSION_COUNT) {
+            return 0;
+        }
+        return ITEMS[t.ordinal() * VERSION_COUNT + versionIndex];
     }
 
     /**
@@ -72,10 +82,9 @@ public class Mappings {
     public static int getParticleId(ParticleType p, int protocol) {
         int versionIndex = protocol - MIN_VERSION;
         if (versionIndex < 0 || versionIndex >= VERSION_COUNT) {
-            throw new IllegalArgumentException("Unsupported protocol version: " + protocol);
+            return -1;
         }
-        int index = p.ordinal() * VERSION_COUNT + versionIndex;
-        return PARTICLES[index];
+        return PARTICLES[p.ordinal() * VERSION_COUNT + versionIndex];
     }
 
     /**
@@ -190,6 +199,99 @@ public class Mappings {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        ITEMS = new int[VERSION_COUNT * ItemType.SIZE];
+        try (InputStreamReader in = new InputStreamReader(getMappingsInputStream("fparticle/items.json"))) {
+
+            Map<String, Map<Integer, Integer>> items = new HashMap<>();
+            JsonObject o = gson.fromJson(in, JsonObject.class);
+            for (Map.Entry<String, JsonElement> block : o.entrySet()) {
+                Map<Integer, Integer> protocol2id = new HashMap<>();
+                for (Map.Entry<String, JsonElement> version : block.getValue().getAsJsonObject().entrySet()) {
+                    protocol2id.put(Integer.parseInt(version.getKey()), version.getValue().getAsInt());
+                }
+                items.put(block.getKey(), protocol2id);
+            }
+
+            Map<Integer, Integer> fallback;
+            try (InputStreamReader in2 = new InputStreamReader(getMappingsInputStream("fparticle/items-adapter.json"))) {
+                Map<String, Map<String, String>> merges = gson.fromJson(in2, new TypeToken<Map<String, Map<String, String>>>(){}.getType());
+
+                merges.get("merge").forEach((k, v) -> {
+                    var m = items.get(k);
+                    var m1 = items.get(v);
+                    merge(m, m1);
+                });
+                Map<String, String> patterns = merges.get("patterns");
+                patterns.keySet().stream().sorted(Comparator.comparingInt(String::length).reversed()).forEach(pattern -> {
+                    var m1 = items.get(patterns.get(pattern));
+                    for (String item : items.keySet()) {
+                        if (wildcardMatches(item, pattern)) {
+                            var m = items.get(item);
+                            merge(m, m1);
+                        }
+                    }
+                });
+                merges.get("merge").forEach((k, v) -> {
+                    var m = items.get(k);
+                    var m1 = items.get(v);
+                    merge(m, m1);
+                });
+
+                fallback = items.get(merges.get("fallback").get("*"));
+            }
+
+
+            for (String item : items.keySet()) {
+                Map<Integer, Integer> protocol2id = items.get(item);
+                ItemType type = ItemType.getById(item);
+                if (type == null) {
+                    log.error("Unknown item: {}", item);
+                    continue;
+                }
+                for (int i = MIN_VERSION; i <= MAX_VERSION; i++) {
+                    Integer itemId = protocol2id.get(i);
+                    if (itemId == null || itemId == -1) {
+                        log.warn("no mapping for item: {} in protocol: {}", item, i);
+                        itemId = fallback.get(i);
+                    }
+                    int index = type.ordinal() * VERSION_COUNT + (i - MIN_VERSION);
+                    ITEMS[index] = itemId;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+    private static void merge(Map<Integer, Integer> m, Map<Integer, Integer> m1){
+        for (Integer i : m1.keySet()) {
+            var v = m.get(i);
+            if (v == null || v == -1) {
+                m.put(i, m1.get(i));
+            }
+        }
+    }
+    private static boolean wildcardMatches(String text, String pattern) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : pattern.toCharArray()) {
+            switch (c) {
+                case '*':
+                    sb.append(".*");
+                    break;
+                case '?':
+                    sb.append('.');
+                    break;
+                case '.':
+                    sb.append("\\.");
+                    break;
+                case '\\', '+', '(', ')', '^', '$', '{', '}', '|', '[', ']':
+                    sb.append('\\').append(c);
+                    break;
+                default:
+                    sb.append(c);
+            }
+        }
+        return text.matches(sb.toString());
     }
 
     @NotNull
